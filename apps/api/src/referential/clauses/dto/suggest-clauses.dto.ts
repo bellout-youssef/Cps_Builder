@@ -4,5 +4,5 @@ export class SuggestClausesDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  articleIds: string[];
+  articleIds!: string[];
 }

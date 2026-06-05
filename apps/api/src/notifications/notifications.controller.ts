@@ -25,6 +25,13 @@ export class NotificationsController {
     return this.notificationsService.markAllAsRead(user.sub, user.organizationId!);
   }
 
+  @Get('count')
+  countUnread(@CurrentUser() user: JwtPayload) {
+    return this.notificationsService
+      .countUnread(user.sub, user.organizationId!)
+      .then((unread) => ({ unread }));
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.notificationsService.remove(id, user.sub);

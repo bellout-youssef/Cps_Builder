@@ -15,5 +15,5 @@ export class UpdateProjectClauseDto {
 export class AddClauseToProjectDto {
   @IsString()
   @IsNotEmpty()
-  clauseId: string;
+  clauseId!: string;
 }

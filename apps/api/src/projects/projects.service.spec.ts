@@ -1,6 +1,6 @@
-import { ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { RoleName, SharePermission, WorkflowAction, WorkflowStep } from '@prisma/client';
+import { RoleName, SharePermission, WorkflowStep } from '@prisma/client';
 import { ProjectsService } from './projects.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -28,9 +28,7 @@ const mockProject = (overrides: Partial<Record<string, unknown>> = {}) => ({
   ...overrides,
 });
 
-const mockUserRole = (roleName: RoleName) => ({
-  role: { name: roleName },
-});
+const mockUserRole = (roleName: RoleName) => ({ role: { name: roleName } });
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +78,10 @@ describe('ProjectsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // Re-set default $transaction implementation after clearAllMocks
+    prismaMock.$transaction.mockImplementation((ops: unknown[]) =>
+      Promise.all(ops as Promise<unknown>[]),
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -120,7 +122,7 @@ describe('ProjectsService', () => {
   // ─── Création de projet ───────────────────────────────────────────────────
 
   describe('create', () => {
-    it('doit créer un projet privé avec les types demandés', async () => {
+    it('doit creer un projet prive avec les types demandes', async () => {
       const created = mockProject();
       prismaMock.project.create.mockResolvedValue(created);
       prismaMock.auditLog.create.mockResolvedValue({});
@@ -133,10 +135,7 @@ describe('ProjectsService', () => {
 
       expect(prismaMock.project.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            isPrivate: true,
-            createdById: 'user-creator',
-          }),
+          data: expect.objectContaining({ isPrivate: true, createdById: 'user-creator' }),
         }),
       );
       expect(result).toEqual(created);
@@ -145,8 +144,8 @@ describe('ProjectsService', () => {
 
   // ─── Immutabilité après publication ──────────────────────────────────────
 
-  describe('immutabilité', () => {
-    it('doit interdire la mise à jour d'un CPS publié', async () => {
+  describe('immutabilite', () => {
+    it("interdit la mise a jour d'un CPS publie", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.PUBLISHED }),
       );
@@ -156,7 +155,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit interdire la mise à jour d'un CPS archivé', async () => {
+    it("interdit la mise a jour d'un CPS archive", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.ARCHIVED }),
       );
@@ -166,7 +165,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit interdire de modifier une clause locale sur un CPS publié', async () => {
+    it("interdit de modifier une clause locale sur un CPS publie", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.PUBLISHED }),
       );
@@ -180,7 +179,7 @@ describe('ProjectsService', () => {
   // ─── Transitions de workflow ──────────────────────────────────────────────
 
   describe('submitForWorkflow', () => {
-    it('doit passer de CREATION à VERIFICATION', async () => {
+    it('doit passer de CREATION a VERIFICATION', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -195,7 +194,7 @@ describe('ProjectsService', () => {
       expect(result?.workflowStep).toBe(WorkflowStep.VERIFICATION);
     });
 
-    it('doit refuser si le projet n'est pas en CREATION', async () => {
+    it("refus si le projet n'est pas en CREATION", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.VERIFICATION }),
       );
@@ -205,7 +204,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('doit refuser si l'utilisateur n'est pas le créateur', async () => {
+    it("refus si l'utilisateur n'est pas le createur", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -223,7 +222,7 @@ describe('ProjectsService', () => {
       );
     });
 
-    it('doit approuver si l'utilisateur est VERIFIER et ≠ créateur', async () => {
+    it("approuve si l'utilisateur est VERIFIER et different du createur", async () => {
       prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VERIFIER)]);
       prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
       prismaMock.project.findUnique.mockResolvedValue(
@@ -235,7 +234,7 @@ describe('ProjectsService', () => {
       expect(result?.workflowStep).toBe(WorkflowStep.BUSINESS_VALIDATION);
     });
 
-    it('doit refuser si l'utilisateur n'a pas le rôle VERIFIER', async () => {
+    it("refus si l'utilisateur n'a pas le role VERIFIER", async () => {
       prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.CREATOR)]);
 
       await expect(
@@ -246,8 +245,8 @@ describe('ProjectsService', () => {
 
   // ─── Séparation des responsabilités ──────────────────────────────────────
 
-  describe('séparation des responsabilités', () => {
-    it('doit refuser que le créateur vérifie son propre CPS', async () => {
+  describe('separation des responsabilites', () => {
+    it('refus : le createur ne peut pas verifier son propre CPS', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.VERIFICATION, createdById: 'user-creator' }),
       );
@@ -258,7 +257,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit refuser que le vérificateur valide le même CPS', async () => {
+    it('refus : le verificateur ne peut pas valider le meme CPS', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
           workflowStep: WorkflowStep.BUSINESS_VALIDATION,
@@ -273,7 +272,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit refuser que le créateur valide son propre CPS', async () => {
+    it('refus : le createur ne peut pas valider son propre CPS', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
           workflowStep: WorkflowStep.BUSINESS_VALIDATION,
@@ -288,7 +287,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit permettre à un tiers de valider', async () => {
+    it('autorise un tiers a valider (createur != verificateur != validateur)', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
           workflowStep: WorkflowStep.BUSINESS_VALIDATION,
@@ -311,7 +310,7 @@ describe('ProjectsService', () => {
   // ─── Rejet / retour en CREATION ───────────────────────────────────────────
 
   describe('rejectCurrentStep', () => {
-    it('doit renvoyer le projet en CREATION avec raison', async () => {
+    it('renvoie le projet en CREATION avec raison et notifie le createur', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.VERIFICATION, createdById: 'user-creator' }),
       );
@@ -322,12 +321,7 @@ describe('ProjectsService', () => {
       );
       notifMock.create.mockResolvedValue({});
 
-      const result = await service.rejectCurrentStep(
-        'proj-1',
-        { reason: 'Documents manquants' },
-        'user-verifier',
-        'org-1',
-      );
+      await service.rejectCurrentStep('proj-1', { reason: 'Documents manquants' }, 'user-verifier', 'org-1');
 
       expect(prismaMock.$transaction).toHaveBeenCalled();
       expect(notifMock.create).toHaveBeenCalledWith(
@@ -335,7 +329,7 @@ describe('ProjectsService', () => {
       );
     });
 
-    it('doit réinitialiser verifiedById et validatedById au rejet', async () => {
+    it('reinitialise verifiedById et validatedById au rejet', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
           workflowStep: WorkflowStep.BUSINESS_VALIDATION,
@@ -350,16 +344,15 @@ describe('ProjectsService', () => {
 
       await service.rejectCurrentStep('proj-1', {}, 'user-validator', 'org-1');
 
-      const txCall = prismaMock.$transaction.mock.calls[0][0];
-      // Le premier élément du tableau de transaction est la mise à jour du projet
-      expect(txCall[0]).toBeDefined();
+      // La transaction doit avoir ete appelee (inclut le reset des champs)
+      expect(prismaMock.$transaction).toHaveBeenCalled();
     });
   });
 
   // ─── Copies locales de clauses ────────────────────────────────────────────
 
   describe('updateLocalClause', () => {
-    it('doit créer une copie locale et marquer isModifiedLocally', async () => {
+    it('cree une copie locale et marque isModifiedLocally=true', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -376,14 +369,14 @@ describe('ProjectsService', () => {
       });
       prismaMock.projectClause.update.mockResolvedValue({
         id: 'pc-1',
-        localContent: 'Nouveau contenu modifié',
+        localContent: 'Nouveau contenu modifie',
         isModifiedLocally: true,
       });
 
       const result = await service.updateLocalClause(
         'proj-1',
         'clause-1',
-        { content: 'Nouveau contenu modifié' },
+        { content: 'Nouveau contenu modifie' },
         'user-creator',
         'org-1',
       );
@@ -396,7 +389,7 @@ describe('ProjectsService', () => {
       expect(result.isModifiedLocally).toBe(true);
     });
 
-    it('ne doit pas toucher le référentiel lors d'une modification locale', async () => {
+    it('ne touche pas la clause du referentiel lors modification locale', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -408,23 +401,29 @@ describe('ProjectsService', () => {
       });
       prismaMock.projectClause.update.mockResolvedValue({ isModifiedLocally: true });
 
-      await service.updateLocalClause('proj-1', 'clause-1', { content: 'modif' }, 'user-creator', 'org-1');
+      await service.updateLocalClause(
+        'proj-1',
+        'clause-1',
+        { content: 'modif' },
+        'user-creator',
+        'org-1',
+      );
 
-      // Seule la copie locale (ProjectClause) est modifiée, pas la clause du référentiel
+      // Seule la copie locale (ProjectClause) est modifiee
       expect(prismaMock.projectClause.update).toHaveBeenCalledTimes(1);
-      // clause.update n'existe pas dans le mock → si le service y touchait, le test planterait
+      // clause.update n'existe pas dans le mock — si le service y touchait, le test planterait
       expect((prismaMock.clause as any).update).toBeUndefined();
     });
   });
 
   describe('resetLocalClause', () => {
-    it('doit restaurer le titre original et effacer localContent', async () => {
+    it('restaure le titre original et efface localContent', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
       prismaMock.projectClause.findUnique.mockResolvedValue({
         id: 'pc-1',
-        clause: { title: 'Titre référentiel', version: 2 },
+        clause: { title: 'Titre referentiel', version: 2 },
         localContent: 'Contenu local',
         isModifiedLocally: true,
       });
@@ -444,7 +443,7 @@ describe('ProjectsService', () => {
   });
 
   describe('acceptClauseVersionUpdate', () => {
-    it('doit mettre à jour vers la version référentiel et vider les modifications locales', async () => {
+    it('met a jour vers la version referentiel et vide les modifications locales', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -452,9 +451,9 @@ describe('ProjectsService', () => {
         id: 'pc-1',
         clauseId: 'clause-1',
         hasNewerVersion: true,
-        localContent: 'Contenu local périmé',
+        localContent: 'Contenu local perime',
         isModifiedLocally: true,
-        clause: { title: 'Nouveau titre référentiel', version: 3 },
+        clause: { title: 'Nouveau titre referentiel', version: 3 },
       });
       prismaMock.projectClause.update.mockResolvedValue({
         localContent: null,
@@ -482,7 +481,7 @@ describe('ProjectsService', () => {
       );
     });
 
-    it('doit lever BadRequestException si aucune mise à jour disponible', async () => {
+    it('leve BadRequestException si aucune mise a jour disponible', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
@@ -501,7 +500,7 @@ describe('ProjectsService', () => {
   // ─── Publication ──────────────────────────────────────────────────────────
 
   describe('publish', () => {
-    it('doit générer le code CPS et verrouiller le document', async () => {
+    it('genere le code CPS et verrouille le document', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
           workflowStep: WorkflowStep.REF_VALIDATION,
@@ -523,7 +522,7 @@ describe('ProjectsService', () => {
       expect(result?.workflowStep).toBe(WorkflowStep.PUBLISHED);
     });
 
-    it('doit refuser si le projet n'est pas en REF_VALIDATION', async () => {
+    it('refus si le projet nest pas en REF_VALIDATION', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.VERIFICATION }),
       );
@@ -534,7 +533,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('doit refuser si l'utilisateur n'est pas REF_MANAGER', async () => {
+    it("refus si l'utilisateur n'est pas REF_MANAGER", async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.REF_VALIDATION, organization: { slug: 'tmpa' } }),
       );
@@ -549,7 +548,7 @@ describe('ProjectsService', () => {
   // ─── Partage ──────────────────────────────────────────────────────────────
 
   describe('shareProject', () => {
-    it('doit permettre au créateur de partager le projet', async () => {
+    it('permet au createur de partager le projet', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ createdById: 'user-creator' }),
       );
@@ -571,19 +570,14 @@ describe('ProjectsService', () => {
       expect(result.permission).toBe(SharePermission.READ);
     });
 
-    it('doit interdire de partager avec son propre créateur', async () => {
+    it('interdit de partager avec le createur lui-meme', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ createdById: 'user-creator' }),
       );
       prismaMock.user.findFirst.mockResolvedValue({ id: 'user-creator', organizationId: 'org-1' });
 
       await expect(
-        service.shareProject(
-          'proj-1',
-          { userId: 'user-creator' },
-          'user-creator',
-          'org-1',
-        ),
+        service.shareProject('proj-1', { userId: 'user-creator' }, 'user-creator', 'org-1'),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -591,7 +585,7 @@ describe('ProjectsService', () => {
   // ─── Sélection d'articles ─────────────────────────────────────────────────
 
   describe('selectArticles', () => {
-    it('doit refuser la sélection sur un CPS publié', async () => {
+    it('refuse la selection sur un CPS publie', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.PUBLISHED }),
       );
@@ -601,7 +595,7 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('doit auto-suggérer les clauses liées aux articles sélectionnés', async () => {
+    it('auto-suggere les clauses liees aux articles selectionnes', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );

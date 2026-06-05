@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ArticlesController } from './articles/articles.controller';
 import { ArticlesService } from './articles/articles.service';
 import { ClausesController } from './clauses/clauses.controller';
@@ -18,7 +20,7 @@ import { ModelesCpsController } from './modeles-cps/modeles-cps.controller';
 import { ModelesCpsService } from './modeles-cps/modeles-cps.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuditModule, NotificationsModule],
   controllers: [
     ArticlesController,
     ClausesController,

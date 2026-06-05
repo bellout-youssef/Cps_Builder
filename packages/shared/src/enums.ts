@@ -32,3 +32,11 @@ export enum WorkflowStep {
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED',
 }
+
+/** Actions possibles à chaque étape du workflow */
+export enum WorkflowAction {
+  SUBMIT = 'SUBMIT',
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  REQUEST_MODIFICATION = 'REQUEST_MODIFICATION',
+}

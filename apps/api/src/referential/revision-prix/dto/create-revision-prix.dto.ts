@@ -4,7 +4,7 @@ export class CreateRevisionPrixDto {
   @IsString()
   @MinLength(2)
   @MaxLength(255)
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsString()

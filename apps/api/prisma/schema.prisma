@@ -60,6 +60,15 @@ enum WorkflowAction {
   REQUEST_MODIFICATION
 }
 
+/// Types de document généré à la publication
+enum DocumentType {
+  HTML
+  DOCX
+  PDF
+  BDP_EXCEL
+  ESTIM_EXCEL
+}
+
 /// Types de notification
 enum NotificationType {
   WORKFLOW_SUBMITTED
@@ -211,11 +220,29 @@ model Project {
   articles        ProjectArticle[]
   clauses         ProjectClause[]
   notifications   Notification[]
+  documents       ProjectDocument[]
 
   @@index([organizationId])
   @@index([organizationId, workflowStep])
   @@index([createdById])
   @@map("projects")
+}
+
+/// Documents générés à la publication (HTML, DOCX, PDF, BDP, ESTIM)
+model ProjectDocument {
+  id        String       @id @default(cuid())
+  projectId String
+  type      DocumentType
+  filename  String
+  /// Chemin relatif depuis la racine uploads/ (ex: docs/orgId/projectId/file.pdf)
+  path      String
+  sizeBytes Int
+  createdAt DateTime     @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_documents")
 }
 
 /// Junction table : un projet peut avoir plusieurs types (A, B, O, M, E)

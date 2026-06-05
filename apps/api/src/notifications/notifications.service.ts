@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationType } from '@prisma/client';
 
 export interface CreateNotificationDto {
   organizationId: string;
@@ -17,7 +17,12 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateNotificationDto) {
-    return this.prisma.notification.create({ data: dto });
+    return this.prisma.notification.create({
+      data: {
+        ...dto,
+        metadata: dto.metadata as Prisma.InputJsonValue,
+      },
+    });
   }
 
   async findAllForUser(userId: string, orgId: string) {
@@ -42,6 +47,12 @@ export class NotificationsService {
     await this.prisma.notification.updateMany({
       where: { userId, organizationId: orgId, isRead: false },
       data: { isRead: true },
+    });
+  }
+
+  async countUnread(userId: string, orgId: string): Promise<number> {
+    return this.prisma.notification.count({
+      where: { userId, organizationId: orgId, isRead: false },
     });
   }
 }

@@ -12,6 +12,9 @@
     "prisma:migrate": "pnpm --filter api prisma:migrate",
     "prisma:studio": "pnpm --filter api prisma:studio"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["puppeteer"]
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",

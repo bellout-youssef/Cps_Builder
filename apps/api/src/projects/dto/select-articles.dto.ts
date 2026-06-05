@@ -5,7 +5,7 @@ export class SelectArticlesDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
-  articleIds: string[];
+  articleIds!: string[];
 
   /// Si false, ne propose pas automatiquement les clauses liées
   @IsOptional()
@@ -16,5 +16,5 @@ export class SelectArticlesDto {
 export class RemoveArticleDto {
   @IsString()
   @IsNotEmpty()
-  articleId: string;
+  articleId!: string;
 }

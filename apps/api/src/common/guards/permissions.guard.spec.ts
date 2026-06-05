@@ -26,7 +26,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('passes @Public() routes regardless of user', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return true;
       return undefined;
     });
@@ -42,7 +42,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('allows SUPER_ADMIN to access org:manage', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['org:manage'];
     });
@@ -51,7 +51,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('denies CREATOR access to org:manage', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['org:manage'];
     });
@@ -60,7 +60,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('denies SUPER_ADMIN access to business content (projects:read)', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['projects:read'];
     });
@@ -69,7 +69,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('allows CREATOR + VERIFIER to satisfy projects:create AND projects:verify', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['projects:create', 'projects:verify'];
     });
@@ -81,7 +81,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('returns false when user is missing from request', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: string) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['projects:read'];
     });

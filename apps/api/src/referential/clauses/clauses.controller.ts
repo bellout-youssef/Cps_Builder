@@ -50,14 +50,14 @@ export class ClausesController {
     @Body() dto: UpdateClauseDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<Clause> {
-    return this.clausesService.update(id, dto, user.organizationId!);
+    return this.clausesService.update(id, dto, user.organizationId!, user.sub);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermissions('referential:manage')
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload): Promise<void> {
-    return this.clausesService.remove(id, user.organizationId!);
+    return this.clausesService.remove(id, user.organizationId!, user.sub);
   }
 
   /**

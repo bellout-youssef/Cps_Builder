@@ -26,11 +26,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    env_file: .env
     environment:
       DATABASE_URL: postgresql://cps_user:cps_password@postgres:5432/cps_db
       NODE_ENV: production
       PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-change_this_secret_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_this_refresh_secret_in_production}
+      JWT_EXPIRY: ${JWT_EXPIRY:-15m}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
     ports:
       - '3001:3001'
     restart: unless-stopped
@@ -42,9 +45,8 @@ services:
     container_name: cps_web
     depends_on:
       - api
-    env_file: .env
     environment:
-      NEXT_PUBLIC_API_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001
     ports:
       - '3000:3000'
     restart: unless-stopped

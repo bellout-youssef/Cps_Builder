@@ -13,7 +13,7 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()
@@ -23,5 +23,5 @@ export class CreateProjectDto {
   @IsArray()
   @ArrayMinSize(1, { message: 'Au moins un type de projet est requis (A, B, O, M ou E)' })
   @IsEnum(ProjectType, { each: true })
-  types: ProjectType[];
+  types!: ProjectType[];
 }

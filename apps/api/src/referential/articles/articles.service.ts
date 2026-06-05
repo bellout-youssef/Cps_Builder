@@ -7,12 +7,16 @@ import {
 } from '@nestjs/common';
 import { Article, ArticleCycle, Prisma, RoleName } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../../audit/audit.service';
 import type { CreateArticleDto } from './dto/create-article.dto';
 import type { UpdateArticleDto } from './dto/update-article.dto';
 
 @Injectable()
 export class ArticlesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   findAll(organizationId: string): Promise<Article[]> {
     return this.prisma.article.findMany({
@@ -88,7 +92,7 @@ export class ArticlesService {
     return this.prisma.article.update({ where: { id }, data });
   }
 
-  async publish(id: string, organizationId: string): Promise<Article> {
+  async publish(id: string, organizationId: string, userId: string): Promise<Article> {
     const article = await this.prisma.article.findFirst({ where: { id, organizationId } });
     if (!article) throw new NotFoundException(`Article ${id} not found`);
 
@@ -106,13 +110,22 @@ export class ArticlesService {
     });
     const code = `ART-${String(codedCount + 1).padStart(4, '0')}`;
 
-    return this.prisma.article.update({
+    const published = await this.prisma.article.update({
       where: { id },
       data: { cycle: ArticleCycle.PUBLISHED, code },
     });
+    await this.auditService.log({
+      action: 'article.published',
+      entity: 'article',
+      entityId: id,
+      userId,
+      organizationId,
+      metadata: { code },
+    });
+    return published;
   }
 
-  async archive(id: string, organizationId: string): Promise<Article> {
+  async archive(id: string, organizationId: string, userId: string): Promise<Article> {
     const article = await this.prisma.article.findFirst({ where: { id, organizationId } });
     if (!article) throw new NotFoundException(`Article ${id} not found`);
 
@@ -122,13 +135,22 @@ export class ArticlesService {
       );
     }
 
-    return this.prisma.article.update({
+    const archived = await this.prisma.article.update({
       where: { id },
       data: { cycle: ArticleCycle.ARCHIVING },
     });
+    await this.auditService.log({
+      action: 'article.archived',
+      entity: 'article',
+      entityId: id,
+      userId,
+      organizationId,
+      metadata: { code: article.code },
+    });
+    return archived;
   }
 
-  async remove(id: string, organizationId: string): Promise<void> {
+  async remove(id: string, organizationId: string, userId: string): Promise<void> {
     const article = await this.prisma.article.findFirst({ where: { id, organizationId } });
     if (!article) throw new NotFoundException(`Article ${id} not found`);
 
@@ -137,5 +159,13 @@ export class ArticlesService {
     }
 
     await this.prisma.article.delete({ where: { id } });
+    await this.auditService.log({
+      action: 'article.deleted',
+      entity: 'article',
+      entityId: id,
+      userId,
+      organizationId,
+      metadata: { title: article.title },
+    });
   }
 }

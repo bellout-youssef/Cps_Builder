@@ -55,19 +55,19 @@ export class ArticlesController {
   @Post(':id/publish')
   @RequirePermissions('referential:publish')
   publish(@Param('id') id: string, @CurrentUser() user: JwtPayload): Promise<Article> {
-    return this.articlesService.publish(id, user.organizationId!);
+    return this.articlesService.publish(id, user.organizationId!, user.sub);
   }
 
   @Post(':id/archive')
   @RequirePermissions('referential:manage')
   archive(@Param('id') id: string, @CurrentUser() user: JwtPayload): Promise<Article> {
-    return this.articlesService.archive(id, user.organizationId!);
+    return this.articlesService.archive(id, user.organizationId!, user.sub);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermissions('referential:manage')
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload): Promise<void> {
-    return this.articlesService.remove(id, user.organizationId!);
+    return this.articlesService.remove(id, user.organizationId!, user.sub);
   }
 }

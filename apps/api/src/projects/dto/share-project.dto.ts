@@ -4,7 +4,7 @@ import { SharePermission } from '@prisma/client';
 export class ShareProjectDto {
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId!: string;
 
   @IsOptional()
   @IsEnum(SharePermission)
@@ -13,5 +13,5 @@ export class ShareProjectDto {
 
 export class UpdateShareDto {
   @IsEnum(SharePermission)
-  permission: SharePermission;
+  permission!: SharePermission;
 }

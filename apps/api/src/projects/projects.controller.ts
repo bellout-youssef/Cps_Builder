@@ -196,7 +196,7 @@ export class ProjectsController {
   }
 
   @Post(':id/workflow/approve')
-  @RequirePermissions('projects:read')
+  @RequirePermissions('workflow:act')
   approveCurrentStep(
     @Param('id') id: string,
     @Body() dto: WorkflowActionDto,
@@ -206,7 +206,7 @@ export class ProjectsController {
   }
 
   @Post(':id/workflow/reject')
-  @RequirePermissions('projects:read')
+  @RequirePermissions('workflow:act')
   rejectCurrentStep(
     @Param('id') id: string,
     @Body() dto: WorkflowActionDto,
@@ -216,7 +216,7 @@ export class ProjectsController {
   }
 
   @Post(':id/workflow/request-modification')
-  @RequirePermissions('projects:read')
+  @RequirePermissions('workflow:act')
   requestModification(
     @Param('id') id: string,
     @Body() dto: WorkflowActionDto,

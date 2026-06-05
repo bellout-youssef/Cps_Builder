@@ -2,17 +2,21 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
   NotificationType,
+  Prisma,
   RoleName,
   SharePermission,
   WorkflowAction,
   WorkflowStep,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PublicationService } from '../documents/publication.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ShareProjectDto, UpdateShareDto } from './dto/share-project.dto';
@@ -22,9 +26,13 @@ import { WorkflowActionDto } from './dto/workflow-action.dto';
 
 @Injectable()
 export class ProjectsService {
+  private readonly logger = new Logger(ProjectsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly publicationService: PublicationService,
   ) {}
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
@@ -44,7 +52,7 @@ export class ProjectsService {
       include: { types: true, shares: true },
     });
 
-    await this.auditLog('project.created', project.id, userId, orgId, { name: dto.name, types: dto.types });
+    await this.auditService.log({ action: 'project.created', entity: 'project', entityId: project.id, userId, organizationId: orgId, metadata: { name: dto.name, types: dto.types } });
     return project;
   }
 
@@ -107,7 +115,7 @@ export class ProjectsService {
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.chapter2Answers !== undefined && { chapter2Answers: dto.chapter2Answers }),
+        ...(dto.chapter2Answers !== undefined && { chapter2Answers: dto.chapter2Answers as Prisma.InputJsonValue }),
       },
       include: { types: true },
     });
@@ -439,7 +447,7 @@ export class ProjectsService {
           action: `workflow.${fromStep.toLowerCase()}.approved`,
           entity: 'project',
           entityId: id,
-          metadata: dto.reason ? { reason: dto.reason } : undefined,
+          metadata: dto.reason ? ({ reason: dto.reason } as Prisma.InputJsonValue) : undefined,
         },
       }),
     ]);
@@ -516,12 +524,19 @@ export class ProjectsService {
           action: 'project.published',
           entity: 'project',
           entityId: id,
-          metadata: { code },
+          metadata: { code } as Prisma.InputJsonValue,
         },
       }),
     ]);
 
-    return this.prisma.project.findUnique({ where: { id }, include: { types: true } });
+    const published = await this.prisma.project.findUnique({ where: { id }, include: { types: true } });
+
+    // Génération asynchrone des documents (HTML, DOCX, PDF, BDP, ESTIM)
+    this.publicationService.generateAndStore(id, orgId).catch((err: unknown) => {
+      this.logger.error(`Échec génération documents pour ${code}: ${err instanceof Error ? err.message : String(err)}`);
+    });
+
+    return published;
   }
 
   // ─── Versionnement ────────────────────────────────────────────────────────
@@ -588,7 +603,7 @@ export class ProjectsService {
           action: 'project.new_version',
           entity: 'project',
           entityId: created.id,
-          metadata: { originalId: id, originalCode: original.code },
+          metadata: { originalId: id, originalCode: original.code } as Prisma.InputJsonValue,
         },
       });
 
@@ -613,7 +628,7 @@ export class ProjectsService {
   private async sendBackToCreation(
     id: string,
     dto: WorkflowActionDto,
-    action: WorkflowAction.REJECT | WorkflowAction.REQUEST_MODIFICATION,
+    action: Exclude<WorkflowAction, 'APPROVE'>,
     userId: string,
     orgId: string,
   ) {
@@ -650,7 +665,7 @@ export class ProjectsService {
           action: action === WorkflowAction.REJECT ? 'workflow.rejected' : 'workflow.modification_requested',
           entity: 'project',
           entityId: id,
-          metadata: { reason: dto.reason, fromStep },
+          metadata: { reason: dto.reason, fromStep } as Prisma.InputJsonValue,
         },
       }),
     ]);
@@ -824,15 +839,5 @@ export class ProjectsService {
     return project;
   }
 
-  private async auditLog(
-    action: string,
-    entityId: string,
-    userId: string,
-    orgId: string,
-    metadata?: Record<string, unknown>,
-  ) {
-    await this.prisma.auditLog.create({
-      data: { organizationId: orgId, userId, action, entity: 'project', entityId, metadata },
-    });
-  }
 }
+

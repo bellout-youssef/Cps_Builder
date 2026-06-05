@@ -26,9 +26,13 @@ export type Permission =
   | 'projects:verify'
   // VALIDATOR
   | 'projects:validate'
+  // Acte de workflow (approbation / rejet / demande modif) — VERIFIER + VALIDATOR + REF_MANAGER
+  | 'workflow:act'
   // Lecture partagée (tous les rôles métier, PAS le SUPER_ADMIN)
   | 'projects:read'
-  | 'referential:read';
+  | 'referential:read'
+  // Journal d'audit — ORG_ADMIN + REF_MANAGER uniquement
+  | 'audit:read';
 
 /**
  * Matrice rôle → permissions.
@@ -48,6 +52,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permissio
     'settings:manage',
     'projects:read',
     'referential:read',
+    'audit:read',
   ],
 
   [RoleName.REF_MANAGER]: [
@@ -56,8 +61,10 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permissio
     'cps:publish',
     'articles:edit_draft',
     'clauses:edit_draft',
+    'workflow:act',
     'projects:read',
     'referential:read',
+    'audit:read',
   ],
 
   [RoleName.CREATOR]: [
@@ -70,12 +77,14 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permissio
 
   [RoleName.VERIFIER]: [
     'projects:verify',
+    'workflow:act',
     'projects:read',
     'referential:read',
   ],
 
   [RoleName.VALIDATOR]: [
     'projects:validate',
+    'workflow:act',
     'projects:read',
     'referential:read',
   ],

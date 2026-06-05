@@ -4,7 +4,7 @@ export class CreateUniteDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  label: string;
+  label!: string;
 
   @IsOptional()
   @IsString()

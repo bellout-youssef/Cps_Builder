@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(npx prettier *)",
+      "Bash(Get-ChildItem -Path . -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name)",
+      "Bash(npx eslint *)",
+      "Bash(cd /d \"c:\\\\cps builder\")",
+      "Bash(dir /s /b apps)"
+    ]
+  }
+}
