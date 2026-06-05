@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"c:\\\\cps builder\" -Recurse -File | Select-Object @{N='Path';E={$_.FullName.Replace\\('c:\\\\cps builder\\\\',''\\)}} | Sort-Object Path)",
+      "PowerShell(Get-ChildItem \"c:\\\\cps builder\\\\apps\\\\api\\\\src\" -Recurse -File | Select-Object @{N='Path';E={$_.FullName.Replace\\('c:\\\\cps builder\\\\apps\\\\api\\\\src\\\\',''\\)}} | Sort-Object Path)",
+      "Bash(Get-ChildItem -Path \"c:\\\\cps builder\\\\apps\\\\api\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\cps builder\" -Recurse -Force)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(pnpm exec *)"
+    ]
+  }
+}

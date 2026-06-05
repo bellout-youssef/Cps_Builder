@@ -1,0 +1,537 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum RoleName {
+  SUPER_ADMIN
+  ORG_ADMIN
+  REF_MANAGER
+  CREATOR
+  VERIFIER
+  VALIDATOR
+}
+
+/// Cycle de vie d'un article : Brouillon → Publication → Publié → Archivage
+enum ArticleCycle {
+  DRAFT
+  PUBLISHING
+  PUBLISHED
+  ARCHIVING
+}
+
+/// Type de projet — multi-sélection via junction table ProjectTypeEntry
+/// A=Aménagement B=Bâtiment O=Ouvrages d'art M=Maritime et Portuaire E=MT/BT
+enum ProjectType {
+  A
+  B
+  O
+  M
+  E
+}
+
+/// Étapes du workflow CPS
+/// Créateur → Vérificateur → Validateur Métier → Responsable Référentiel → Publication
+enum WorkflowStep {
+  CREATION
+  VERIFICATION
+  BUSINESS_VALIDATION
+  REF_VALIDATION
+  PUBLISHED
+  ARCHIVED
+}
+
+/// Permission de partage d'un projet
+enum SharePermission {
+  READ
+  WRITE
+}
+
+/// Action de workflow : valider / rejeter / demander modification
+enum WorkflowAction {
+  APPROVE
+  REJECT
+  REQUEST_MODIFICATION
+}
+
+/// Types de notification
+enum NotificationType {
+  WORKFLOW_SUBMITTED
+  WORKFLOW_APPROVED
+  WORKFLOW_REJECTED
+  WORKFLOW_MODIFICATION_REQUESTED
+  CLAUSE_UPDATED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  /// Compteur de CPS publiés — incrémenté de façon atomique à chaque publication
+  cpsCounter Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  users              User[]
+  projects           Project[]
+  articles           Article[]
+  clauses            Clause[]
+  auditLogs          AuditLog[]
+  userRoles          UserRole[]
+  series             Serie[]
+  unites             Unite[]
+  revisionsPrix      RevisionPrix[]
+  documentReferences DocumentReference[]
+  modelesCPS         ModeleCPS[]
+  fichesTechniques   FicheTechnique[]
+  notifications      Notification[]
+
+  @@map("organizations")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  passwordHash      String
+  /// Null uniquement pour le SUPER_ADMIN (périmètre global)
+  organizationId    String?
+  /// Désactivation logique — suppression INTERDITE pour conserver l'historique
+  isActive          Boolean  @default(true)
+  /// Mot de passe temporaire → changement forcé à la première connexion
+  mustChangePassword Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization        Organization?       @relation(fields: [organizationId], references: [id])
+  roles               UserRole[]
+  /// Projets créés par cet utilisateur
+  projects            Project[]           @relation("ProjectCreator")
+  /// Projets vérifiés par cet utilisateur (séparation des responsabilités)
+  verifiedProjects    Project[]           @relation("ProjectVerifier")
+  /// Projets validés par cet utilisateur (séparation des responsabilités)
+  validatedProjects   Project[]           @relation("ProjectValidator")
+  articles            Article[]
+  clauses             Clause[]
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  series              Serie[]
+  unites              Unite[]
+  revisionsPrix       RevisionPrix[]
+  documentReferences  DocumentReference[]
+  modelesCPS          ModeleCPS[]
+  fichesTechniques    FicheTechnique[]
+  projectShares       ProjectShare[]
+  workflowTransitions WorkflowTransition[]
+  notifications       Notification[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  /// SHA-256 du token JWT (pour lookup déterministe sans stocker le token en clair)
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id             String   @id @default(cuid())
+  userId         String
+  roleId         String
+  /// Null pour SUPER_ADMIN (portée globale), obligatoire pour tous les autres rôles
+  organizationId String?
+  createdAt      DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role          @relation(fields: [roleId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("user_roles")
+}
+
+model Project {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  /// Code définitif attribué à la publication — format : YYMMDD_CPS_ORGSLUG_XXXX
+  code           String?      @unique
+  workflowStep   WorkflowStep @default(CREATION)
+  /// true = visible uniquement par le créateur et les utilisateurs partagés
+  isPrivate      Boolean      @default(true)
+  createdById    String
+  /// ID du vérificateur ayant approuvé (séparation des responsabilités)
+  verifiedById   String?
+  /// ID du validateur métier ayant approuvé (séparation des responsabilités)
+  validatedById  String?
+  /// Réponses au questionnaire Chapitre II (JSONB)
+  chapter2Answers Json?
+  publishedAt    DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id])
+  createdBy       User               @relation("ProjectCreator", fields: [createdById], references: [id])
+  verifiedBy      User?              @relation("ProjectVerifier", fields: [verifiedById], references: [id])
+  validatedBy     User?              @relation("ProjectValidator", fields: [validatedById], references: [id])
+  types           ProjectTypeEntry[]
+  shares          ProjectShare[]
+  workflowHistory WorkflowTransition[]
+  articles        ProjectArticle[]
+  clauses         ProjectClause[]
+  notifications   Notification[]
+
+  @@index([organizationId])
+  @@index([organizationId, workflowStep])
+  @@index([createdById])
+  @@map("projects")
+}
+
+/// Junction table : un projet peut avoir plusieurs types (A, B, O, M, E)
+model ProjectTypeEntry {
+  id        String      @id @default(cuid())
+  projectId String
+  type      ProjectType
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, type])
+  @@map("project_type_entries")
+}
+
+/// Partage d'un projet avec un utilisateur spécifique (lecture ou modification)
+model ProjectShare {
+  id         String          @id @default(cuid())
+  projectId  String
+  userId     String
+  permission SharePermission @default(READ)
+  createdAt  DateTime        @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_shares")
+}
+
+/// Historique immuable des transitions de workflow
+model WorkflowTransition {
+  id            String         @id @default(cuid())
+  projectId     String
+  fromStep      WorkflowStep
+  toStep        WorkflowStep
+  action        WorkflowAction
+  performedById String
+  reason        String?
+  createdAt     DateTime       @default(now())
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  performedBy User    @relation(fields: [performedById], references: [id])
+
+  @@index([projectId])
+  @@index([performedById])
+  @@map("workflow_transitions")
+}
+
+/// Articles sélectionnés pour un projet CPS
+model ProjectArticle {
+  id        String @id @default(cuid())
+  projectId String
+  articleId String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id])
+
+  @@unique([projectId, articleId])
+  @@index([projectId])
+  @@map("project_articles")
+}
+
+/// Copie locale d'une clause dans un projet CPS
+/// Créée à la sélection ; isModifiedLocally passe à true à la première modification.
+/// Le référentiel reste inchangé.
+model ProjectClause {
+  id                 String   @id @default(cuid())
+  projectId          String
+  /// Référence à la clause d'origine dans le référentiel
+  clauseId           String
+  /// Snapshot du titre au moment de la sélection
+  title              String
+  /// Snapshot du numéro au moment de la sélection
+  number             String
+  /// Contenu modifié localement (null = non modifié, contenu = référentiel)
+  localContent       String?
+  /// true si le contenu a été modifié par rapport au référentiel
+  isModifiedLocally  Boolean  @default(false)
+  /// Version du référentiel sur laquelle cette copie est basée
+  referentialVersion Int      @default(1)
+  /// true si le référentiel a une version plus récente non encore intégrée
+  hasNewerVersion    Boolean  @default(false)
+  /// true = suggérée automatiquement ; false = ajoutée manuellement
+  isAutomatic        Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clause  Clause  @relation(fields: [clauseId], references: [id])
+
+  @@unique([projectId, clauseId])
+  @@index([projectId])
+  @@index([clauseId])
+  @@map("project_clauses")
+}
+
+model Article {
+  id             String       @id @default(cuid())
+  organizationId String
+  /// Code attribué uniquement à la publication — figé ensuite
+  code           String?
+  title          String
+  description    String?
+  /// Unité choisie à la création et figée après publication
+  unit           String?
+  cycle          ArticleCycle @default(DRAFT)
+  serieId        String?
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  createdBy       User            @relation(fields: [createdById], references: [id])
+  serie           Serie?          @relation(fields: [serieId], references: [id])
+  clauses         Clause[]
+  fiches          ArticleFiche[]
+  projectArticles ProjectArticle[]
+
+  /// code unique par organisation (les nulls sont traités comme distincts par PostgreSQL)
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([organizationId, cycle])
+  @@index([serieId])
+  @@map("articles")
+}
+
+model Clause {
+  id             String   @id @default(cuid())
+  organizationId String
+  /// Null pour les clauses communes non liées à un article
+  articleId      String?
+  number         String
+  title          String
+  content        String?
+  /// Incrémenté à chaque mise à jour — permet de détecter les nouvelles versions dans les projets
+  version        Int      @default(1)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  article        Article?        @relation(fields: [articleId], references: [id])
+  createdBy      User            @relation(fields: [createdById], references: [id])
+  projectClauses ProjectClause[]
+
+  @@index([organizationId])
+  @@index([articleId])
+  @@map("clauses")
+}
+
+model Serie {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  description    String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  articles     Article[]
+
+  @@index([organizationId])
+  @@map("series")
+}
+
+model Unite {
+  id             String   @id @default(cuid())
+  organizationId String
+  label          String
+  symbol         String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@unique([organizationId, label])
+  @@index([organizationId])
+  @@map("unites")
+}
+
+model RevisionPrix {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  formula        String?
+  description    String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@map("revision_prix")
+}
+
+model DocumentReference {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  reference      String?
+  url            String?
+  description    String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@map("document_references")
+}
+
+/// Modèle de CPS réutilisable, lié à un ou plusieurs types de projet (JSONB)
+model ModeleCPS {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  /// Tableau de ProjectType (ex: ["A","B"]) stocké en JSONB
+  projectTypes   Json     @default("[]")
+  templatePath   String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@map("modeles_cps")
+}
+
+model FicheTechnique {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  url            String?
+  description    String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  articles     ArticleFiche[]
+
+  @@index([organizationId])
+  @@map("fiches_techniques")
+}
+
+/// Table de jonction Article ↔ FicheTechnique
+model ArticleFiche {
+  articleId String
+  ficheId   String
+
+  article Article        @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fiche   FicheTechnique @relation(fields: [ficheId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, ficheId])
+  @@map("article_fiches")
+}
+
+/// Notifications de workflow et d'évolution du référentiel
+/// Supprimées après traitement (traçabilité conservée dans AuditLog)
+model Notification {
+  id             String           @id @default(cuid())
+  organizationId String
+  /// Destinataire
+  userId         String
+  projectId      String?
+  type           NotificationType
+  title          String
+  message        String?
+  isRead         Boolean          @default(false)
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+/// Journal d'audit immuable — aucune suppression autorisée
+model AuditLog {
+  id             String   @id @default(cuid())
+  /// Null pour les actions du SUPER_ADMIN (portée globale)
+  organizationId String?
+  userId         String
+  action         String
+  entity         String
+  entityId       String?
+  /// Métadonnées libres (JSONB) : before/after, raison, contexte
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
