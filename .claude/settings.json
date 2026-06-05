@@ -7,7 +7,8 @@
       "Bash(Select-Object Name)",
       "Bash(npx eslint *)",
       "Bash(cd /d \"c:\\\\cps builder\")",
-      "Bash(dir /s /b apps)"
+      "Bash(dir /s /b apps)",
+      "PowerShell(Get-ChildItem -Recurse \"c:\\\\cps builder\" -Filter \"page.tsx\" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match \"bibliotheque\" })"
     ]
   }
 }
