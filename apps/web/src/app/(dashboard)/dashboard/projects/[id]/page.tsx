@@ -222,7 +222,7 @@ export default function ProjectPage() {
                   {tab === 'historique' && (
                     <Card>
                       <CardBody className="pt-5">
-                        <WorkflowHistory history={project.workflowHistory} />
+                        <WorkflowHistory history={project.workflowHistory ?? []} />
                       </CardBody>
                     </Card>
                   )}
@@ -239,8 +239,8 @@ export default function ProjectPage() {
 // ─── Aperçu tab ───────────────────────────────────────────────────────────────
 
 function AperçuTab({ project }: { project: ProjectDetail }) {
-  const answers = project.questionnaireAnswers;
-  const hasAnswers = Object.keys(answers).length > 0;
+  const answers = project.chapter2Answers;
+  const hasAnswers = answers !== null && Object.keys(answers).length > 0;
 
   return (
     <div className="space-y-4">
@@ -253,7 +253,7 @@ function AperçuTab({ project }: { project: ProjectDetail }) {
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Articles</dt>
               <dd className="mt-1 text-sm font-semibold text-slate-800">
-                {project.clauses.length > 0 ? `${project.clauses.length} clauses` : '—'}
+                {(project.clauses ?? []).length > 0 ? `${(project.clauses ?? []).length} clauses` : '—'}
               </dd>
             </div>
             <div>
@@ -266,19 +266,21 @@ function AperçuTab({ project }: { project: ProjectDetail }) {
         </CardBody>
       </Card>
 
-      {hasAnswers && (
+      {hasAnswers && answers && (
         <Card>
           <CardHeader>
-            <CardTitle>Chapitre II — Questionnaire</CardTitle>
+            <CardTitle>Questionnaire CPS</CardTitle>
           </CardHeader>
           <CardBody>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {Object.entries(answers).map(([key, value]) => (
-                <div key={key}>
-                  <dt className="text-xs font-medium text-slate-400">{key.replace(/_/g, ' ')}</dt>
-                  <dd className="mt-0.5 text-sm text-slate-700">{value || '—'}</dd>
-                </div>
-              ))}
+              {Object.entries(answers)
+                .filter(([, v]) => typeof v === 'string' && v !== '')
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <dt className="text-xs font-medium text-slate-400">{key.replace(/_/g, ' ')}</dt>
+                    <dd className="mt-0.5 text-sm text-slate-700">{String(value) || '—'}</dd>
+                  </div>
+                ))}
             </dl>
           </CardBody>
         </Card>
@@ -290,7 +292,9 @@ function AperçuTab({ project }: { project: ProjectDetail }) {
 // ─── Clauses tab ──────────────────────────────────────────────────────────────
 
 function ClausesTab({ project }: { project: ProjectDetail }) {
-  if (project.clauses.length === 0) {
+  const clauses = project.clauses ?? [];
+
+  if (clauses.length === 0) {
     return (
       <Card>
         <CardBody className="pt-5">
@@ -304,7 +308,7 @@ function ClausesTab({ project }: { project: ProjectDetail }) {
     <Card>
       <CardBody className="pt-5">
         <ul className="divide-y divide-slate-100">
-          {project.clauses
+          {clauses
             .slice()
             .sort((a, b) => a.order - b.order)
             .map((clause) => (

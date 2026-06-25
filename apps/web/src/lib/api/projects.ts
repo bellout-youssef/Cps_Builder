@@ -1,5 +1,7 @@
 import { apiRequest } from '../api-client';
-import type { WorkflowStep, ProjectType, WorkflowAction } from '@cps/shared';
+import type { WorkflowStep, ProjectType } from '@cps/shared';
+import { WorkflowAction } from '@cps/shared';
+import type { CpsQuestionnaire } from '@/components/nouveau-projet/cps-questionnaire.types';
 
 export interface ProjectListItem {
   id: string;
@@ -7,6 +9,7 @@ export interface ProjectListItem {
   workflowStep: WorkflowStep;
   isPrivate: boolean;
   code: string | null;
+  dceRef: string | null;
   types: Array<{ type: ProjectType }>;
   createdAt: string;
   updatedAt: string;
@@ -41,7 +44,7 @@ export interface WorkflowHistoryItem {
 export interface ProjectDetail extends ProjectListItem {
   description?: string;
   clauses: ProjectClause[];
-  questionnaireAnswers: Record<string, string>;
+  chapter2Answers: CpsQuestionnaire | null;
   workflowHistory: WorkflowHistoryItem[];
 }
 
@@ -49,10 +52,6 @@ export interface CreateProjectPayload {
   name: string;
   description?: string;
   types: ProjectType[];
-  isPrivate: boolean;
-  articleIds: string[];
-  clauseIds: string[];
-  questionnaireAnswers: Record<string, string>;
 }
 
 export async function getProjects(): Promise<ProjectListItem[]> {
@@ -73,13 +72,30 @@ export async function createProject(payload: CreateProjectPayload): Promise<Proj
   });
 }
 
+export async function saveQuestionnaireDraft(
+  projectId: string,
+  questionnaire: CpsQuestionnaire,
+): Promise<void> {
+  await apiRequest<unknown>(`/projects/${projectId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ chapter2Answers: questionnaire }),
+  });
+}
+
 export async function transitionWorkflow(
   projectId: string,
   action: WorkflowAction,
   comment?: string,
 ): Promise<ProjectDetail> {
-  return apiRequest<ProjectDetail>(`/projects/${projectId}/workflow`, {
+  const routes: Record<WorkflowAction, string> = {
+    [WorkflowAction.SUBMIT]: 'submit',
+    [WorkflowAction.APPROVE]: 'approve',
+    [WorkflowAction.REJECT]: 'reject',
+    [WorkflowAction.REQUEST_MODIFICATION]: 'request-modification',
+    [WorkflowAction.PUBLISH]: 'publish',
+  };
+  return apiRequest<ProjectDetail>(`/projects/${projectId}/workflow/${routes[action]}`, {
     method: 'POST',
-    body: JSON.stringify({ action, comment }),
+    body: comment ? JSON.stringify({ reason: comment }) : undefined,
   });
 }

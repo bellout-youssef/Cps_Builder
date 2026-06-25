@@ -71,7 +71,7 @@ async function main(): Promise<void> {
   for (const u of users) {
     const created = await prisma.user.upsert({
       where:  { email: u.email },
-      update: {},
+      update: { organizationId: org.id },
       create: { email: u.email, name: u.name, passwordHash: pw, organizationId: org.id },
     });
     await upsertUserRole(created.id, u.role, org.id);

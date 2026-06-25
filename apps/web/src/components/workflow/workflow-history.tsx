@@ -10,6 +10,7 @@ const ACTION_ICON: Record<WorkflowAction, React.ReactNode> = {
   [WorkflowAction.APPROVE]: <CheckCircle className="h-4 w-4" />,
   [WorkflowAction.REJECT]: <XCircle className="h-4 w-4" />,
   [WorkflowAction.REQUEST_MODIFICATION]: <MessageSquare className="h-4 w-4" />,
+  [WorkflowAction.PUBLISH]: <CheckCircle className="h-4 w-4" />,
 };
 
 const ACTION_LABEL: Record<WorkflowAction, string> = {
@@ -17,6 +18,7 @@ const ACTION_LABEL: Record<WorkflowAction, string> = {
   [WorkflowAction.APPROVE]: 'Approuvé',
   [WorkflowAction.REJECT]: 'Rejeté',
   [WorkflowAction.REQUEST_MODIFICATION]: 'Modification demandée',
+  [WorkflowAction.PUBLISH]: 'Publié',
 };
 
 const ACTION_COLOR: Record<WorkflowAction, string> = {
@@ -24,6 +26,7 @@ const ACTION_COLOR: Record<WorkflowAction, string> = {
   [WorkflowAction.APPROVE]: 'text-green-600 bg-green-50',
   [WorkflowAction.REJECT]: 'text-red-600 bg-red-50',
   [WorkflowAction.REQUEST_MODIFICATION]: 'text-amber-600 bg-amber-50',
+  [WorkflowAction.PUBLISH]: 'text-emerald-600 bg-emerald-50',
 };
 
 const STEP_LABEL: Partial<Record<WorkflowStep, string>> = {

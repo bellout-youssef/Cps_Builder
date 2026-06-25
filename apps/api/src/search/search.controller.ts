@@ -17,7 +17,7 @@ export class SearchController {
   search(@Query() query: SearchQueryDto, @CurrentUser() user: JwtPayload) {
     return this.searchService.search(
       query.q,
-      user.organizationId!,
+      user.organizationId,
       query.types,
       query.limit ?? 20,
     );

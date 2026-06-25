@@ -29,12 +29,13 @@ export class AuditService {
     });
   }
 
-  findAll(organizationId: string, filters: QueryAuditDto = {}) {
+  findAll(organizationId: string | null, filters: QueryAuditDto = {}) {
     const { entity, entityId, action, userId, from, to, limit = 50, offset = 0 } = filters;
 
     return this.prisma.auditLog.findMany({
       where: {
-        organizationId,
+        // null = Super Admin → no org filter (all-org view); string → scoped to org
+        ...(organizationId !== null && { organizationId }),
         ...(entity && { entity }),
         ...(entityId && { entityId }),
         ...(action && { action: { contains: action, mode: Prisma.QueryMode.insensitive } }),

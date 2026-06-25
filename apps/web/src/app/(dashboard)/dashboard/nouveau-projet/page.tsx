@@ -1,51 +1,111 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import type { ProjectType } from '@cps/shared';
 import { useAuth } from '@/contexts/auth-context';
-import { createProject } from '@/lib/api/projects';
+import { createProject, saveQuestionnaireDraft } from '@/lib/api/projects';
 import { Header } from '@/components/layout/header';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WizardProgress } from '@/components/nouveau-projet/wizard-progress';
-import { StepTypes, type StepTypesData } from '@/components/nouveau-projet/step-types';
-import { StepArticles } from '@/components/nouveau-projet/step-articles';
-import { StepClauses } from '@/components/nouveau-projet/step-clauses';
-import { StepQuestionnaire } from '@/components/nouveau-projet/step-questionnaire';
+import { EMPTY_QUESTIONNAIRE, type CpsQuestionnaire } from '@/components/nouveau-projet/cps-questionnaire.types';
+import { Step1Projet, type Step1ProjectData, type Step1Errors } from '@/components/nouveau-projet/steps/step-1-projet';
+import { Step2Mo } from '@/components/nouveau-projet/steps/step-2-mo';
+import { Step3Objet, type Step3Errors } from '@/components/nouveau-projet/steps/step-3-objet';
+import { Step4Intervenants } from '@/components/nouveau-projet/steps/step-4-intervenants';
+import { Step5Consistance } from '@/components/nouveau-projet/steps/step-5-consistance';
+import { Step6Delai } from '@/components/nouveau-projet/steps/step-6-delai';
+import { Step7Penalites } from '@/components/nouveau-projet/steps/step-7-penalites';
+import { Step8Revision } from '@/components/nouveau-projet/steps/step-8-revision';
+import { Step9StApprovi } from '@/components/nouveau-projet/steps/step-9-st-approvi';
+import { Step10Variante } from '@/components/nouveau-projet/steps/step-10-variante';
+import { Step11ClausesTech } from '@/components/nouveau-projet/steps/step-11-clauses-tech';
+import { Step12Prix } from '@/components/nouveau-projet/steps/step-12-prix';
 
-// ─── Wizard state ─────────────────────────────────────────────────────────────
+// ─── Steps definition ─────────────────────────────────────────────────────────
+
+const STEPS = [
+  { label: 'Projet & AO' },
+  { label: 'Maître d\'Ouvrage' },
+  { label: 'Objet' },
+  { label: 'Intervenants' },
+  { label: 'Consistance' },
+  { label: 'Délai' },
+  { label: 'Pénalités' },
+  { label: 'Révision' },
+  { label: 'Sous-traitance' },
+  { label: 'Variante' },
+  { label: 'Ch. III Technique' },
+  { label: 'Ch. IV Prix' },
+];
+
+const STEP_TITLES = [
+  'Projet & Appel d\'Offres',
+  'Maître d\'Ouvrage',
+  'Objet du marché',
+  'Intervenants',
+  'Consistance, textes & cautionnement',
+  'Délai d\'exécution',
+  'Délai de garantie & Pénalités',
+  'Révision des prix',
+  'Sous-traitance & Approvisionnements',
+  'Variante',
+  'Clauses techniques — Chapitre III',
+  'Définition des prix — Chapitre IV',
+];
+
+const STEP_SUBTITLES = [
+  'Renseignez les informations générales du projet et les données de l\'appel d\'offres.',
+  'Identité du Maître d\'Ouvrage (préambule du CPS).',
+  'Objet détaillé et lieu d\'exécution des travaux.',
+  'Maître d\'œuvre, bureau de contrôle et autres intervenants.',
+  'Description des travaux, textes applicables et cautionnement provisoire.',
+  'Type de délai et calendrier d\'exécution.',
+  'Durée de la garantie et conditions de pénalités pour retard.',
+  'Conditions de révision des prix (fermes ou révisables).',
+  'Règles de sous-traitance et acomptes sur approvisionnements.',
+  'Conditions d\'application de la variante (Art 2.13).',
+  'Prescriptions techniques et documents à fournir.',
+  'Liste des articles prix qui constitueront le Chapitre IV.',
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
 
 interface WizardState {
-  step1: StepTypesData;
-  step2ArticleIds: string[];
-  step3ClauseIds: string[];
-  step4Answers: Record<string, string>;
+  step1: Step1ProjectData;
+  questionnaire: CpsQuestionnaire;
+  projectId: string | null;
+  dceRef: string | null;
 }
 
 const INITIAL_STATE: WizardState = {
-  step1: { name: '', description: '', types: [], isPrivate: true },
-  step2ArticleIds: [],
-  step3ClauseIds: [],
-  step4Answers: {},
+  step1: {
+    name: '',
+    description: '',
+    types: [],
+    questionnaire: { ao_num: '', ao_title: '', mode_passation: '' },
+  },
+  questionnaire: EMPTY_QUESTIONNAIRE,
+  projectId: null,
+  dceRef: null,
 };
 
-const STEPS = [
-  { label: 'Informations' },
-  { label: 'Articles' },
-  { label: 'Clauses' },
-  { label: 'Questionnaire' },
-];
+// ─── Validation helpers ───────────────────────────────────────────────────────
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-
-type Step1Errors = Partial<Record<keyof StepTypesData, string>>;
-
-function validateStep1(data: StepTypesData): Step1Errors {
+function validateStep1(data: Step1ProjectData): Step1Errors {
   const errors: Step1Errors = {};
   if (!data.name.trim()) errors.name = 'Le nom du projet est obligatoire.';
   if (data.types.length === 0) errors.types = 'Sélectionnez au moins un type de projet.';
+  if (!data.questionnaire.ao_num.trim()) errors.ao_num = 'Le numéro AO est obligatoire.';
+  if (!data.questionnaire.ao_title.trim()) errors.ao_title = 'L\'intitulé du marché est obligatoire.';
+  return errors;
+}
+
+function validateStep3(q: CpsQuestionnaire): Step3Errors {
+  const errors: Step3Errors = {};
+  if (!q.objet_detail.trim()) errors.objet_detail = 'L\'objet du marché est obligatoire.';
   return errors;
 }
 
@@ -58,8 +118,34 @@ export default function NouveauProjetPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [step1Errors, setStep1Errors] = useState<Step1Errors>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [step3Errors, setStep3Errors] = useState<Step3Errors>({});
+  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
+
+  // Merge step-specific questionnaire fields into the main questionnaire
+  function setQ(partial: Partial<CpsQuestionnaire>) {
+    setState((s) => ({ ...s, questionnaire: { ...s.questionnaire, ...partial } }));
+  }
+
+  // Auto-save draft after each step advance (fire-and-forget)
+  const autosave = useCallback(
+    async (projectId: string, questionnaire: CpsQuestionnaire) => {
+      setSaving(true);
+      setSaveError(null);
+      try {
+        await saveQuestionnaireDraft(projectId, questionnaire);
+        setSaveOk(true);
+        setTimeout(() => setSaveOk(false), 2000);
+      } catch {
+        setSaveError('Sauvegarde automatique échouée. Vos données restent en mémoire.');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [],
+  );
 
   if (!user || !can('projects:create')) {
     return (
@@ -74,7 +160,12 @@ export default function NouveauProjetPage() {
     );
   }
 
-  function goNext() {
+  // ─── Navigation ─────────────────────────────────────────────────────────────
+
+  async function goNext() {
+    setSaveError(null);
+
+    // Step 0 → CREATE project first
     if (currentStep === 0) {
       const errors = validateStep1(state.step1);
       if (Object.keys(errors).length > 0) {
@@ -82,33 +173,81 @@ export default function NouveauProjetPage() {
         return;
       }
       setStep1Errors({});
+
+      if (!state.projectId) {
+        setCreating(true);
+        try {
+          const project = await createProject({
+            name: state.step1.name.trim(),
+            description: state.step1.description.trim() || undefined,
+            types: state.step1.types as ProjectType[],
+          });
+
+          const initialQ: CpsQuestionnaire = {
+            ...state.questionnaire,
+            ...state.step1.questionnaire,
+          };
+
+          setState((s) => ({
+            ...s,
+            projectId: project.id,
+            dceRef: project.dceRef,
+            questionnaire: initialQ,
+          }));
+
+          // Save AO fields immediately
+          await saveQuestionnaireDraft(project.id, initialQ);
+          setCurrentStep(1);
+        } catch (err: unknown) {
+          setSaveError(err instanceof Error ? err.message : 'Erreur lors de la création du projet.');
+        } finally {
+          setCreating(false);
+        }
+        return;
+      }
     }
-    setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
+
+    // Step 2 (Objet) validation
+    if (currentStep === 2) {
+      const errors = validateStep3(state.questionnaire);
+      if (Object.keys(errors).length > 0) {
+        setStep3Errors(errors);
+        return;
+      }
+      setStep3Errors({});
+    }
+
+    const next = Math.min(currentStep + 1, STEPS.length - 1);
+
+    // Auto-save on each step advance (after project exists)
+    if (state.projectId) {
+      void autosave(state.projectId, state.questionnaire);
+    }
+
+    setCurrentStep(next);
   }
 
   function goPrev() {
+    setSaveError(null);
     setCurrentStep((s) => Math.max(s - 1, 0));
   }
 
-  async function handleSubmit() {
-    setSubmitting(true);
-    setSubmitError(null);
+  async function handleFinish() {
+    if (!state.projectId) return;
+    setSaving(true);
+    setSaveError(null);
     try {
-      const project = await createProject({
-        name: state.step1.name.trim(),
-        description: state.step1.description.trim() || undefined,
-        types: state.step1.types as ProjectType[],
-        isPrivate: state.step1.isPrivate,
-        articleIds: state.step2ArticleIds,
-        clauseIds: state.step3ClauseIds,
-        questionnaireAnswers: state.step4Answers,
-      });
-      router.push(`/dashboard/projects/${project.id}`);
+      await saveQuestionnaireDraft(state.projectId, state.questionnaire);
+      router.push(`/dashboard/projects/${state.projectId}`);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Erreur lors de la création du projet.');
-      setSubmitting(false);
+      setSaveError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde finale.');
+      setSaving(false);
     }
   }
+
+  const isLastStep = currentStep === STEPS.length - 1;
+  const isFirstStep = currentStep === 0;
+  const q = state.questionnaire;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -122,85 +261,143 @@ export default function NouveauProjetPage() {
           {/* Step card */}
           <Card>
             <CardBody className="pt-6">
+              {/* Step header */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {currentStep === 0 && 'Informations générales'}
-                  {currentStep === 1 && 'Sélection des articles'}
-                  {currentStep === 2 && 'Clauses techniques'}
-                  {currentStep === 3 && 'Questionnaire — Chapitre II'}
+                  {STEP_TITLES[currentStep]}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {currentStep === 0 && 'Donnez un nom à votre CPS et choisissez les types de travaux.'}
-                  {currentStep === 1 && 'Sélectionnez les articles du référentiel à inclure dans ce CPS.'}
-                  {currentStep === 2 && 'Vérifiez et complétez les clauses techniques proposées.'}
-                  {currentStep === 3 && 'Renseignez les paramètres qui vont construire le Chapitre II.'}
-                </p>
+                <p className="mt-1 text-sm text-slate-500">{STEP_SUBTITLES[currentStep]}</p>
               </div>
 
+              {/* Step content */}
               {currentStep === 0 && (
-                <StepTypes
+                <Step1Projet
                   data={state.step1}
+                  dceRef={state.dceRef}
                   onChange={(step1) => setState((s) => ({ ...s, step1 }))}
                   errors={step1Errors}
                 />
               )}
               {currentStep === 1 && (
-                <StepArticles
-                  selectedIds={state.step2ArticleIds}
-                  onChange={(step2ArticleIds) => setState((s) => ({ ...s, step2ArticleIds }))}
+                <Step2Mo
+                  data={{ mo_capital: q.mo_capital, mo_rc: q.mo_rc, mo_ice: q.mo_ice, mo_if: q.mo_if, mo_siege: q.mo_siege, mo_dg: q.mo_dg }}
+                  onChange={(d) => setQ(d)}
                 />
               )}
               {currentStep === 2 && (
-                <StepClauses
-                  selectedArticleIds={state.step2ArticleIds}
-                  projectTypes={state.step1.types as ProjectType[]}
-                  selectedClauseIds={state.step3ClauseIds}
-                  onChange={(step3ClauseIds) => setState((s) => ({ ...s, step3ClauseIds }))}
+                <Step3Objet
+                  data={{ objet_detail: q.objet_detail, lieu_exec: q.lieu_exec }}
+                  onChange={(d) => setQ(d)}
+                  errors={step3Errors}
                 />
               )}
               {currentStep === 3 && (
-                <StepQuestionnaire
-                  answers={state.step4Answers}
-                  onChange={(step4Answers) => setState((s) => ({ ...s, step4Answers }))}
+                <Step4Intervenants
+                  data={{ int_mo: q.int_mo, int_moe: q.int_moe, int_bc: q.int_bc, int_topo: q.int_topo }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 4 && (
+                <Step5Consistance
+                  data={{ consistance: q.consistance, textes_speciaux: q.textes_speciaux, caut_prov: q.caut_prov }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 5 && (
+                <Step6Delai
+                  data={{ delai_type: q.delai_type, delai_ferme_mois: q.delai_ferme_mois, tranches: q.tranches, delais_partiels: q.delais_partiels }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 6 && (
+                <Step7Penalites
+                  data={{ delai_garantie: q.delai_garantie, penalite_taux: q.penalite_taux, penalite_plafond: q.penalite_plafond, penalite_autres: q.penalite_autres, penalite_autres_detail: q.penalite_autres_detail }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 7 && (
+                <Step8Revision
+                  data={{ revision_prix: q.revision_prix, rev_k: q.rev_k, rev_a: q.rev_a, rev_b: q.rev_b, rev_plafond: q.rev_plafond }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 8 && (
+                <Step9StApprovi
+                  data={{ st_exclus: q.st_exclus, approvi: q.approvi }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 9 && (
+                <Step10Variante
+                  data={{ variante: q.variante, variante_series: q.variante_series }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 10 && (
+                <Step11ClausesTech
+                  data={{ tech_prescriptions: q.tech_prescriptions, tech_docs: q.tech_docs }}
+                  onChange={(d) => setQ(d)}
+                />
+              )}
+              {currentStep === 11 && (
+                <Step12Prix
+                  data={{ cdp_lignes: q.cdp_lignes }}
+                  onChange={(d) => setQ(d)}
                 />
               )}
 
-              {/* Submit error */}
-              {submitError && (
+              {/* Status messages */}
+              {saveError && (
                 <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  {submitError}
+                  {saveError}
+                </div>
+              )}
+              {saveOk && (
+                <div className="mt-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  Brouillon sauvegardé.
                 </div>
               )}
             </CardBody>
 
-            {/* Navigation footer */}
+            {/* Footer navigation */}
             <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
               <Button
                 variant="ghost"
                 size="md"
                 onClick={goPrev}
-                disabled={currentStep === 0 || submitting}
+                disabled={isFirstStep || creating || saving}
               >
                 Précédent
               </Button>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-400">
-                  Étape {currentStep + 1} / {STEPS.length}
-                </span>
-                {currentStep < STEPS.length - 1 ? (
-                  <Button variant="primary" size="md" onClick={goNext}>
-                    Suivant
+                {saving && (
+                  <span className="text-xs text-slate-400">Sauvegarde…</span>
+                )}
+                {state.projectId && (
+                  <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-500">
+                    {state.dceRef}
+                  </span>
+                )}
+                {!isLastStep ? (
+                  <Button
+                    variant="primary"
+                    size="md"
+                    loading={creating}
+                    onClick={goNext}
+                  >
+                    {currentStep === 0 && !state.projectId ? 'Créer & continuer' : 'Suivant'}
                   </Button>
                 ) : (
                   <Button
                     variant="primary"
                     size="md"
-                    loading={submitting}
-                    onClick={handleSubmit}
+                    loading={saving}
+                    onClick={handleFinish}
                   >
-                    Créer le projet
+                    Terminer & voir le projet
                   </Button>
                 )}
               </div>

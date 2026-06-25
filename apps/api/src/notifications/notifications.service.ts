@@ -25,9 +25,9 @@ export class NotificationsService {
     });
   }
 
-  async findAllForUser(userId: string, orgId: string) {
+  async findAllForUser(userId: string, orgId: string | null) {
     return this.prisma.notification.findMany({
-      where: { userId, organizationId: orgId },
+      where: { userId, ...(orgId && { organizationId: orgId }) },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -43,16 +43,16 @@ export class NotificationsService {
     return this.prisma.notification.delete({ where: { id, userId } });
   }
 
-  async markAllAsRead(userId: string, orgId: string) {
+  async markAllAsRead(userId: string, orgId: string | null) {
     await this.prisma.notification.updateMany({
-      where: { userId, organizationId: orgId, isRead: false },
+      where: { userId, ...(orgId && { organizationId: orgId }), isRead: false },
       data: { isRead: true },
     });
   }
 
-  async countUnread(userId: string, orgId: string): Promise<number> {
+  async countUnread(userId: string, orgId: string | null): Promise<number> {
     return this.prisma.notification.count({
-      where: { userId, organizationId: orgId, isRead: false },
+      where: { userId, ...(orgId && { organizationId: orgId }), isRead: false },
     });
   }
 }

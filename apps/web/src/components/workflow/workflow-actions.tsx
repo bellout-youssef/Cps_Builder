@@ -55,7 +55,7 @@ function getAvailableActions(
     case WorkflowStep.REF_VALIDATION:
       if (roles.has(RoleName.REF_MANAGER)) {
         return [
-          { action: WorkflowAction.APPROVE, label: 'Publier le CPS', icon: <CheckCircle className="h-4 w-4" />, variant: 'primary' },
+          { action: WorkflowAction.PUBLISH, label: 'Publier le CPS', icon: <CheckCircle className="h-4 w-4" />, variant: 'primary' },
           { action: WorkflowAction.REQUEST_MODIFICATION, label: 'Demander modification', icon: <MessageSquare className="h-4 w-4" />, variant: 'secondary' },
           { action: WorkflowAction.REJECT, label: 'Rejeter', icon: <XCircle className="h-4 w-4" />, variant: 'danger' },
         ];

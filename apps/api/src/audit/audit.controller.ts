@@ -15,6 +15,6 @@ export class AuditController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload, @Query() query: QueryAuditDto) {
-    return this.auditService.findAll(user.organizationId!, query);
+    return this.auditService.findAll(user.organizationId, query);
   }
 }

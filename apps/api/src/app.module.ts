@@ -5,12 +5,14 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { RbacModule } from './rbac/rbac.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { UsersModule } from './users/users.module';
 import { ReferentialModule } from './referential/referential.module';
 import { ProjectsModule } from './projects/projects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AuditModule } from './audit/audit.module';
 import { SearchModule } from './search/search.module';
+import { AdminModule } from './admin/admin.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantGuard } from './common/guards/tenant.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -22,12 +24,14 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     RbacModule,
     AuthModule,
     OrganizationsModule,
+    UsersModule,
     ReferentialModule,
     ProjectsModule,
     NotificationsModule,
     DocumentsModule,
     AuditModule,
     SearchModule,
+    AdminModule,
   ],
   providers: [
     // Ordre impératif : JWT → Tenant → Permissions

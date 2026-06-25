@@ -26,11 +26,11 @@ export class SearchService {
 
   async search(
     query: string,
-    orgId: string,
+    orgId: string | null,
     types?: SearchResultType[],
     limit = 20,
   ): Promise<SearchResult[]> {
-    if (!query.trim()) return [];
+    if (!query.trim() || !orgId) return [];
 
     const enabled: SearchResultType[] = types?.length
       ? types

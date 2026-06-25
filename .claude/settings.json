@@ -8,7 +8,13 @@
       "Bash(npx eslint *)",
       "Bash(cd /d \"c:\\\\cps builder\")",
       "Bash(dir /s /b apps)",
-      "PowerShell(Get-ChildItem -Recurse \"c:\\\\cps builder\" -Filter \"page.tsx\" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match \"bibliotheque\" })"
+      "PowerShell(Get-ChildItem -Recurse \"c:\\\\cps builder\" -Filter \"page.tsx\" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match \"bibliotheque\" })",
+      "Bash(pnpm --filter api prisma migrate dev --name add-dce-ref)",
+      "Bash(npx prisma *)",
+      "Bash(tasklist)",
+      "Bash(findstr -i \"node\")",
+      "Bash(taskkill /F /PID 26084)",
+      "Bash(dir \"c:\\\\cps builder\\\\apps\\\\web\\\\src\\\\components\\\\nouveau-projet\" /S /B)"
     ]
   }
 }

@@ -86,6 +86,8 @@ model Organization {
   slug       String   @unique
   /// Compteur de CPS publiés — incrémenté de façon atomique à chaque publication
   cpsCounter Int      @default(0)
+  /// Compteur de références DCE — incrémenté à la création de chaque projet
+  dceCounter Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -203,6 +205,8 @@ model Project {
   verifiedById   String?
   /// ID du validateur métier ayant approuvé (séparation des responsabilités)
   validatedById  String?
+  /// Référence DCE auto-générée à la création — format YYMMDD_DCE_CPS_ORGSLUG_XXXXX
+  dceRef          String?
   /// Réponses au questionnaire Chapitre II (JSONB)
   chapter2Answers Json?
   publishedAt    DateTime?

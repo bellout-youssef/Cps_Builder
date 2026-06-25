@@ -12,7 +12,7 @@ export class NotificationsController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
-    return this.notificationsService.findAllForUser(user.sub, user.organizationId!);
+    return this.notificationsService.findAllForUser(user.sub, user.organizationId);
   }
 
   @Patch(':id/read')
@@ -22,13 +22,13 @@ export class NotificationsController {
 
   @Patch('read-all')
   markAllAsRead(@CurrentUser() user: JwtPayload) {
-    return this.notificationsService.markAllAsRead(user.sub, user.organizationId!);
+    return this.notificationsService.markAllAsRead(user.sub, user.organizationId);
   }
 
   @Get('count')
   countUnread(@CurrentUser() user: JwtPayload) {
     return this.notificationsService
-      .countUnread(user.sub, user.organizationId!)
+      .countUnread(user.sub, user.organizationId)
       .then((unread) => ({ unread }));
   }
 

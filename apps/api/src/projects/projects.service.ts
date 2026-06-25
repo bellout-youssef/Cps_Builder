@@ -38,6 +38,13 @@ export class ProjectsService {
   // ─── CRUD ─────────────────────────────────────────────────────────────────
 
   async create(dto: CreateProjectDto, userId: string, orgId: string) {
+    const org = await this.prisma.organization.update({
+      where: { id: orgId },
+      data: { dceCounter: { increment: 1 } },
+    });
+
+    const dceRef = this.generateDceRef(org.slug, org.dceCounter, new Date());
+
     const project = await this.prisma.project.create({
       data: {
         organizationId: orgId,
@@ -45,6 +52,7 @@ export class ProjectsService {
         name: dto.name,
         description: dto.description,
         isPrivate: true,
+        dceRef,
         types: {
           create: dto.types.map((type) => ({ type })),
         },
@@ -52,7 +60,7 @@ export class ProjectsService {
       include: { types: true, shares: true },
     });
 
-    await this.auditService.log({ action: 'project.created', entity: 'project', entityId: project.id, userId, organizationId: orgId, metadata: { name: dto.name, types: dto.types } });
+    await this.auditService.log({ action: 'project.created', entity: 'project', entityId: project.id, userId, organizationId: orgId, metadata: { name: dto.name, types: dto.types, dceRef } });
     return project;
   }
 
@@ -613,7 +621,15 @@ export class ProjectsService {
     return this.prisma.project.findUnique({ where: { id: newProject.id }, include: { types: true } });
   }
 
-  // ─── Génération du code CPS ───────────────────────────────────────────────
+  // ─── Génération des codes ─────────────────────────────────────────────────
+
+  generateDceRef(orgSlug: string, counter: number, date: Date): string {
+    const yy = String(date.getFullYear()).slice(2);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const seq = String(counter).padStart(5, '0');
+    return `${yy}${mm}${dd}_DCE_CPS_${orgSlug.toUpperCase()}_${seq}`;
+  }
 
   generateCpsCode(orgSlug: string, counter: number, date: Date): string {
     const yy = String(date.getFullYear()).slice(2);

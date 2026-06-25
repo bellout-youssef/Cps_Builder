@@ -16,11 +16,12 @@ const TILES: { key: keyof MonitoringStats; label: string }[] = [
 export function MonitoringTab() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getMonitoringStats()
       .then(setStats)
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -32,8 +33,14 @@ export function MonitoringTab() {
     );
   }
 
-  if (!stats) {
-    return <p className="py-8 text-center text-sm text-slate-500">Données indisponibles.</p>;
+  if (error || !stats) {
+    return (
+      <p className="py-8 text-center text-sm text-red-600">
+        {error
+          ? "Impossible de charger les statistiques — vérifiez que l'API est joignable."
+          : 'Données indisponibles.'}
+      </p>
+    );
   }
 
   return (

@@ -57,12 +57,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       include: {
-        roles: {
-          where: dto.organizationId
-            ? { organizationId: dto.organizationId }
-            : { organizationId: null },
-          include: { role: true },
-        },
+        roles: { include: { role: true } },
       },
     });
 
@@ -70,8 +65,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const roles = user.roles.map((ur) => ur.role.name);
-    return this.issueTokenPair(user.id, user.email, user.organizationId, roles);
+    // Resolve org context: explicit DTO > user record > first UserRole's org (handles stale user.organizationId=null)
+    const orgId =
+      dto.organizationId ??
+      user.organizationId ??
+      user.roles.find((ur) => ur.organizationId !== null)?.organizationId ??
+      null;
+
+    const roles = user.roles
+      .filter((ur) => ur.organizationId === orgId)
+      .map((ur) => ur.role.name);
+
+    return this.issueTokenPair(user.id, user.email, orgId, roles);
   }
 
   async refresh(dto: RefreshDto): Promise<AuthTokens> {

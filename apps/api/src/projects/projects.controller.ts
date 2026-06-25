@@ -6,11 +6,7 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../common/guards/tenant.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { JwtPayload } from '../common/types/jwt-payload.type';
@@ -23,7 +19,6 @@ import { AddClauseToProjectDto, UpdateProjectClauseDto } from './dto/update-proj
 import { WorkflowActionDto } from './dto/workflow-action.dto';
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 

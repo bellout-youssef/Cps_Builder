@@ -33,6 +33,12 @@ const ACTION_CONFIG: Record<
     variant: 'secondary',
     requireComment: true,
   },
+  [WorkflowAction.PUBLISH]: {
+    label: 'Publier le CPS',
+    description: 'Le CPS sera publié avec un code définitif et les documents (HTML, DOCX, PDF) seront générés. Cette action est irréversible.',
+    variant: 'primary',
+    requireComment: false,
+  },
 };
 
 interface ActionModalProps {
