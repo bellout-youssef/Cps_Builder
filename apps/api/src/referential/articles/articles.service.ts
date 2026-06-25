@@ -65,9 +65,9 @@ export class ArticlesService {
       throw new ForbiddenException('Archived articles cannot be modified');
     }
 
-    const isRefManager = userRoles.includes(RoleName.REF_MANAGER);
-    if (!isRefManager && article.cycle !== ArticleCycle.DRAFT) {
-      throw new ForbiddenException('Only REF_MANAGER can modify non-draft articles');
+    const isAdmin = userRoles.includes(RoleName.ADMIN);
+    if (!isAdmin && article.cycle !== ArticleCycle.DRAFT) {
+      throw new ForbiddenException('Seul un ADMIN peut modifier un article non-brouillon');
     }
 
     if (

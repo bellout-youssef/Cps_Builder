@@ -1,14 +1,20 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import type { ProjectType } from '@cps/shared';
 import { useAuth } from '@/contexts/auth-context';
-import { createProject, saveQuestionnaireDraft } from '@/lib/api/projects';
+import {
+  createProject,
+  getProject,
+  saveQuestionnaireDraft,
+  updateProject,
+} from '@/lib/api/projects';
 import { Header } from '@/components/layout/header';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { WizardProgress } from '@/components/nouveau-projet/wizard-progress';
 import { EMPTY_QUESTIONNAIRE, type CpsQuestionnaire } from '@/components/nouveau-projet/cps-questionnaire.types';
 import { Step1Projet, type Step1ProjectData, type Step1Errors } from '@/components/nouveau-projet/steps/step-1-projet';
@@ -109,11 +115,14 @@ function validateStep3(q: CpsQuestionnaire): Step3Errors {
   return errors;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Inner page (uses useSearchParams — must be wrapped in Suspense) ──────────
 
-export default function NouveauProjetPage() {
+function NouveauProjetInner() {
   const { can, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editProjectId = searchParams.get('edit');
+  const editMode = Boolean(editProjectId);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
@@ -121,8 +130,38 @@ export default function NouveauProjetPage() {
   const [step3Errors, setStep3Errors] = useState<Step3Errors>({});
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(editMode);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
+
+  // Load existing project when in edit mode
+  useEffect(() => {
+    if (!editProjectId) return;
+    setLoadingEdit(true);
+    getProject(editProjectId)
+      .then((project) => {
+        const q: CpsQuestionnaire = project.chapter2Answers ?? EMPTY_QUESTIONNAIRE;
+        setState({
+          projectId: project.id,
+          dceRef: project.dceRef,
+          step1: {
+            name: project.name,
+            description: project.description ?? '',
+            types: project.types.map((t) => t.type),
+            questionnaire: {
+              ao_num: q.ao_num ?? '',
+              ao_title: q.ao_title ?? '',
+              mode_passation: q.mode_passation ?? '',
+            },
+          },
+          questionnaire: q,
+        });
+      })
+      .catch((err: unknown) =>
+        setSaveError(err instanceof Error ? err.message : 'Erreur de chargement du projet.'),
+      )
+      .finally(() => setLoadingEdit(false));
+  }, [editProjectId]);
 
   // Merge step-specific questionnaire fields into the main questionnaire
   function setQ(partial: Partial<CpsQuestionnaire>) {
@@ -150,11 +189,22 @@ export default function NouveauProjetPage() {
   if (!user || !can('projects:create')) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header title="Nouveau projet" />
+        <Header title={editMode ? 'Modifier le projet' : 'Nouveau projet'} />
         <main className="flex flex-1 items-center justify-center p-6">
           <p className="text-sm text-slate-500">
-            Vous n&apos;avez pas l&apos;autorisation de créer un projet.
+            Vous n&apos;avez pas l&apos;autorisation de modifier ce projet.
           </p>
+        </main>
+      </div>
+    );
+  }
+
+  if (loadingEdit) {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header title="Modifier le projet" />
+        <main className="flex flex-1 items-center justify-center">
+          <Spinner size="lg" />
         </main>
       </div>
     );
@@ -165,7 +215,7 @@ export default function NouveauProjetPage() {
   async function goNext() {
     setSaveError(null);
 
-    // Step 0 → CREATE project first
+    // Step 0
     if (currentStep === 0) {
       const errors = validateStep1(state.step1);
       if (Object.keys(errors).length > 0) {
@@ -174,7 +224,31 @@ export default function NouveauProjetPage() {
       }
       setStep1Errors({});
 
+      if (editMode && state.projectId) {
+        // Edit mode: PATCH instead of POST
+        setCreating(true);
+        try {
+          const initialQ: CpsQuestionnaire = {
+            ...state.questionnaire,
+            ...state.step1.questionnaire,
+          };
+          await updateProject(state.projectId, {
+            name: state.step1.name.trim(),
+            description: state.step1.description.trim() || undefined,
+          });
+          await saveQuestionnaireDraft(state.projectId, initialQ);
+          setState((s) => ({ ...s, questionnaire: initialQ }));
+          setCurrentStep(1);
+        } catch (err: unknown) {
+          setSaveError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du projet.');
+        } finally {
+          setCreating(false);
+        }
+        return;
+      }
+
       if (!state.projectId) {
+        // Create mode: POST
         setCreating(true);
         try {
           const project = await createProject({
@@ -195,7 +269,6 @@ export default function NouveauProjetPage() {
             questionnaire: initialQ,
           }));
 
-          // Save AO fields immediately
           await saveQuestionnaireDraft(project.id, initialQ);
           setCurrentStep(1);
         } catch (err: unknown) {
@@ -251,7 +324,7 @@ export default function NouveauProjetPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header title="Nouveau projet" />
+      <Header title={editMode ? 'Modifier le projet' : 'Nouveau projet'} />
 
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-3xl space-y-6">
@@ -388,7 +461,11 @@ export default function NouveauProjetPage() {
                     loading={creating}
                     onClick={goNext}
                   >
-                    {currentStep === 0 && !state.projectId ? 'Créer & continuer' : 'Suivant'}
+                    {currentStep === 0 && !state.projectId && !editMode
+                      ? 'Créer & continuer'
+                      : currentStep === 0 && editMode
+                        ? 'Modifier & continuer'
+                        : 'Suivant'}
                   </Button>
                 ) : (
                   <Button
@@ -397,7 +474,7 @@ export default function NouveauProjetPage() {
                     loading={saving}
                     onClick={handleFinish}
                   >
-                    Terminer & voir le projet
+                    {editMode ? 'Enregistrer & voir le projet' : 'Terminer & voir le projet'}
                   </Button>
                 )}
               </div>
@@ -406,5 +483,23 @@ export default function NouveauProjetPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── Page export — wrapped in Suspense (required for useSearchParams) ─────────
+
+export default function NouveauProjetPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex flex-1 items-center justify-center">
+            <Spinner size="lg" />
+          </div>
+        </div>
+      }
+    >
+      <NouveauProjetInner />
+    </Suspense>
   );
 }

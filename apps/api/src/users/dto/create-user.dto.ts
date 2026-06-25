@@ -9,12 +9,10 @@ import {
 } from 'class-validator';
 import { RoleName } from '@prisma/client';
 
+/** Rôles assignables dans une organisation — SUPER_ADMIN exclu (réservé à la plateforme). */
 const ORG_ROLES = [
-  RoleName.ORG_ADMIN,
-  RoleName.REF_MANAGER,
-  RoleName.CREATOR,
-  RoleName.VERIFIER,
-  RoleName.VALIDATOR,
+  RoleName.ADMIN,
+  RoleName.USER,
 ] as const;
 
 export class CreateUserDto {

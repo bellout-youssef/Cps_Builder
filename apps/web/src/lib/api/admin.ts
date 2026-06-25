@@ -21,6 +21,17 @@ export async function getUsers(): Promise<UserItem[]> {
   return apiRequest<UserItem[]>('/users');
 }
 
+export interface OrgMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/** Liste minimale des membres actifs de l'org pour le dropdown workflow. */
+export async function getOrgMembers(): Promise<OrgMember[]> {
+  return apiRequest<OrgMember[]>('/users/org-members');
+}
+
 export async function createUser(dto: CreateUserDto): Promise<UserItem> {
   return apiRequest<UserItem>('/users', {
     method: 'POST',

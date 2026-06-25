@@ -22,12 +22,9 @@ async function upsertUserRole(
 async function main(): Promise<void> {
   // ── 1. Rôles ────────────────────────────────────────────────────────────────
   const roleDefinitions: { name: RoleName; description: string }[] = [
-    { name: RoleName.SUPER_ADMIN,  description: 'Gestion globale : organisations, abonnements, licences, monitoring.' },
-    { name: RoleName.ORG_ADMIN,    description: 'Administration de l\'organisation : utilisateurs, rôles, paramètres.' },
-    { name: RoleName.REF_MANAGER,  description: 'Référentiel : articles, clauses, publication CPS.' },
-    { name: RoleName.CREATOR,      description: 'Crée et modifie les projets CPS et les brouillons.' },
-    { name: RoleName.VERIFIER,     description: 'Vérifie les projets CPS.' },
-    { name: RoleName.VALIDATOR,    description: 'Valide le contenu métier des projets CPS.' },
+    { name: RoleName.SUPER_ADMIN, description: 'Gestion globale : organisations, abonnements, licences, monitoring.' },
+    { name: RoleName.ADMIN,       description: 'Administrateur organisation : gère les utilisateurs, le référentiel, les projets, la validation et la publication.' },
+    { name: RoleName.USER,        description: 'Utilisateur polyvalent : crée des projets et vérifie les projets d\'autres utilisateurs.' },
   ];
 
   for (const def of roleDefinitions) {
@@ -58,16 +55,16 @@ async function main(): Promise<void> {
   });
   console.log(`✓ Org: ${org.name} (${org.id})`);
 
-  // ── 4. Utilisateurs (un par rôle métier) ─────────────────────────────────────
+  // ── 4. Utilisateurs de test ───────────────────────────────────────────────────
+  // orgadmin → ADMIN ; les 4 autres → USER (pour tester la séparation des responsabilités)
   const users: { email: string; name: string; role: RoleName }[] = [
-    { email: 'orgadmin@cps.dev',    name: 'Admin Organisation',       role: RoleName.ORG_ADMIN    },
-    { email: 'refmanager@cps.dev',  name: 'Responsable Référentiel',  role: RoleName.REF_MANAGER  },
-    { email: 'createur@cps.dev',    name: 'Créateur CPS',             role: RoleName.CREATOR      },
-    { email: 'verificateur@cps.dev',name: 'Vérificateur CPS',         role: RoleName.VERIFIER     },
-    { email: 'validateur@cps.dev',  name: 'Validateur Métier',        role: RoleName.VALIDATOR    },
+    { email: 'orgadmin@cps.dev',     name: 'Admin Organisation',      role: RoleName.ADMIN },
+    { email: 'refmanager@cps.dev',   name: 'Responsable Référentiel', role: RoleName.USER  },
+    { email: 'createur@cps.dev',     name: 'Créateur CPS',            role: RoleName.USER  },
+    { email: 'verificateur@cps.dev', name: 'Vérificateur CPS',        role: RoleName.USER  },
+    { email: 'validateur@cps.dev',   name: 'Validateur Métier',       role: RoleName.USER  },
   ];
 
-  const userMap: Record<string, { id: string }> = {};
   for (const u of users) {
     const created = await prisma.user.upsert({
       where:  { email: u.email },
@@ -75,13 +72,13 @@ async function main(): Promise<void> {
       create: { email: u.email, name: u.name, passwordHash: pw, organizationId: org.id },
     });
     await upsertUserRole(created.id, u.role, org.id);
-    userMap[u.role] = { id: created.id };
     console.log(`✓ ${u.email}  /  Admin@1234!`);
   }
 
-  const refManagerId = userMap[RoleName.REF_MANAGER].id;
-  const creatorId    = userMap[RoleName.CREATOR].id;
-  const verifierId   = userMap[RoleName.VERIFIER].id;
+  // Pour les données de démo, utiliser les emails comme clés (les rôles ne sont plus uniques)
+  const refManagerId   = (await prisma.user.findUniqueOrThrow({ where: { email: 'refmanager@cps.dev'   } })).id;
+  const creatorId      = (await prisma.user.findUniqueOrThrow({ where: { email: 'createur@cps.dev'     } })).id;
+  const verifierId     = (await prisma.user.findUniqueOrThrow({ where: { email: 'verificateur@cps.dev' } })).id;
 
   // ── 5. Séries ─────────────────────────────────────────────────────────────────
   type SerieInput = { code: string; name: string; description: string };
@@ -452,12 +449,12 @@ Sécurité et Environnement (PHSE) approuvé avant tout démarrage des travaux.<
   console.log('\n═══════════════════════════════════════════════════════');
   console.log('✅  Seed terminé — Identifiants de connexion :');
   console.log('───────────────────────────────────────────────────────');
-  console.log('  superadmin@cps.dev      / Admin@1234!  (Super Admin)');
-  console.log('  orgadmin@cps.dev        / Admin@1234!  (Admin Organisation)');
-  console.log('  refmanager@cps.dev      / Admin@1234!  (Responsable Référentiel)');
-  console.log('  createur@cps.dev        / Admin@1234!  (Créateur)');
-  console.log('  verificateur@cps.dev    / Admin@1234!  (Vérificateur)');
-  console.log('  validateur@cps.dev      / Admin@1234!  (Validateur)');
+  console.log('  superadmin@cps.dev      / Admin@1234!  (SUPER_ADMIN)');
+  console.log('  orgadmin@cps.dev        / Admin@1234!  (ADMIN)');
+  console.log('  refmanager@cps.dev      / Admin@1234!  (USER)');
+  console.log('  createur@cps.dev        / Admin@1234!  (USER)');
+  console.log('  verificateur@cps.dev    / Admin@1234!  (USER)');
+  console.log('  validateur@cps.dev      / Admin@1234!  (USER)');
   console.log('═══════════════════════════════════════════════════════\n');
 }
 

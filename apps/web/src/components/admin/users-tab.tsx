@@ -18,19 +18,13 @@ import {
 import type { UserItem } from '@/lib/api/admin';
 
 const ALL_ROLES = [
-  { value: 'ORG_ADMIN', label: 'Admin Organisation' },
-  { value: 'REF_MANAGER', label: 'Resp. Référentiel' },
-  { value: 'CREATOR', label: 'Créateur' },
-  { value: 'VERIFIER', label: 'Vérificateur' },
-  { value: 'VALIDATOR', label: 'Validateur' },
+  { value: 'ADMIN', label: 'Administrateur' },
+  { value: 'USER',  label: 'Utilisateur' },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
-  ORG_ADMIN: 'Admin Org',
-  REF_MANAGER: 'Resp. Réf.',
-  CREATOR: 'Créateur',
-  VERIFIER: 'Vérificateur',
-  VALIDATOR: 'Validateur',
+  ADMIN: 'Administrateur',
+  USER:  'Utilisateur',
 };
 
 function RolesCheckboxes({

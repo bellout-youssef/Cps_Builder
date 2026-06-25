@@ -65,6 +65,15 @@ export class UsersService {
     return users.map((u) => toUserItem(u, orgId));
   }
 
+  /** Liste minimale des membres actifs de l'org pour le dropdown workflow (tous rôles). */
+  async findOrgMembers(orgId: string): Promise<{ id: string; name: string; email: string }[]> {
+    return this.prisma.user.findMany({
+      where: { organizationId: orgId, isActive: true },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async create(dto: CreateUserDto, orgId: string): Promise<UserItem> {
     if (dto.roles.includes(RoleName.SUPER_ADMIN)) {
       throw new ForbiddenException('Le rôle SUPER_ADMIN ne peut pas être assigné via ce endpoint.');

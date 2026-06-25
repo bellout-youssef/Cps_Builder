@@ -1,8 +1,9 @@
-import { IsArray, IsEnum } from 'class-validator';
+import { IsArray, IsIn } from 'class-validator';
 import { RoleName } from '@prisma/client';
+import { ORG_ROLES } from './create-user.dto';
 
 export class UpdateRolesDto {
   @IsArray()
-  @IsEnum(RoleName, { each: true })
+  @IsIn(ORG_ROLES, { each: true })
   roles!: RoleName[];
 }

@@ -41,13 +41,13 @@ export class AuthService {
     const roles: RoleName[] = [];
 
     if (dto.organizationId) {
-      const creatorRole = await this.prisma.role.findUniqueOrThrow({
-        where: { name: RoleName.CREATOR },
+      const userRole = await this.prisma.role.findUniqueOrThrow({
+        where: { name: RoleName.USER },
       });
       await this.prisma.userRole.create({
-        data: { userId: user.id, roleId: creatorRole.id, organizationId: dto.organizationId },
+        data: { userId: user.id, roleId: userRole.id, organizationId: dto.organizationId },
       });
-      roles.push(RoleName.CREATOR);
+      roles.push(RoleName.USER);
     }
 
     return this.issueTokenPair(user.id, user.email, user.organizationId, roles);

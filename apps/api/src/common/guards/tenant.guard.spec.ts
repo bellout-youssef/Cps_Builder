@@ -45,7 +45,7 @@ describe('TenantGuard', () => {
   });
 
   it('sets organizationId on request for org-scoped user', () => {
-    const user: JwtPayload = { sub: '2', email: 'u@org.com', organizationId: 'org-abc', roles: [RoleName.CREATOR] };
+    const user: JwtPayload = { sub: '2', email: 'u@org.com', organizationId: 'org-abc', roles: [RoleName.USER] };
     const { ctx, request } = makeContext(user);
     expect(guard.canActivate(ctx)).toBe(true);
     expect(request['isSuperAdmin']).toBe(false);
@@ -53,7 +53,7 @@ describe('TenantGuard', () => {
   });
 
   it('throws ForbiddenException for org-scoped user with null organizationId in token', () => {
-    const user: JwtPayload = { sub: '3', email: 'u@org.com', organizationId: null, roles: [RoleName.CREATOR] };
+    const user: JwtPayload = { sub: '3', email: 'u@org.com', organizationId: null, roles: [RoleName.USER] };
     const { ctx } = makeContext(user);
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
   });

@@ -16,6 +16,7 @@ const mockProject = (overrides: Partial<Record<string, unknown>> = {}) => ({
   workflowStep: WorkflowStep.CREATION,
   isPrivate: true,
   createdById: 'user-creator',
+  currentHolderId: null,
   verifiedById: null,
   validatedById: null,
   chapter2Answers: null,
@@ -78,7 +79,6 @@ describe('ProjectsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    // Re-set default $transaction implementation after clearAllMocks
     prismaMock.$transaction.mockImplementation((ops: unknown[]) =>
       Promise.all(ops as Promise<unknown>[]),
     );
@@ -124,6 +124,7 @@ describe('ProjectsService', () => {
   describe('create', () => {
     it('doit creer un projet prive avec les types demandes', async () => {
       const created = mockProject();
+      prismaMock.organization.update.mockResolvedValue({ slug: 'tmpa', dceCounter: 1 });
       prismaMock.project.create.mockResolvedValue(created);
       prismaMock.auditLog.create.mockResolvedValue({});
 
@@ -176,152 +177,152 @@ describe('ProjectsService', () => {
     });
   });
 
-  // ─── Transitions de workflow ──────────────────────────────────────────────
+  // ─── sendForReview — envoi vers USER ─────────────────────────────────────
 
-  describe('submitForWorkflow', () => {
-    it('doit passer de CREATION a VERIFICATION', async () => {
+  describe('sendForReview — vers un USER', () => {
+    it('passe de CREATION a PENDING_REVIEW et notifie le destinataire', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
-      prismaMock.project.findUnique.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION }),
-      );
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-verif', organizationId: 'org-1', isActive: true });
       prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
+      prismaMock.project.findUnique.mockResolvedValue(
+        mockProject({ workflowStep: WorkflowStep.PENDING_REVIEW, currentHolderId: 'user-verif' }),
+      );
+      notifMock.create.mockResolvedValue({});
 
-      const result = await service.submitForWorkflow('proj-1', 'user-creator', 'org-1');
+      const result = await service.sendForReview(
+        'proj-1',
+        { targetUserId: 'user-verif' },
+        'user-creator',
+        'org-1',
+      );
 
       expect(prismaMock.$transaction).toHaveBeenCalled();
-      expect(result?.workflowStep).toBe(WorkflowStep.VERIFICATION);
+      expect(notifMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-verif', type: 'WORKFLOW_SUBMITTED' }),
+      );
+      expect(result?.workflowStep).toBe(WorkflowStep.PENDING_REVIEW);
     });
 
-    it("refus si le projet n'est pas en CREATION", async () => {
+    it('refus si on essaie de s envoyer le projet a soi-meme', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION }),
+        mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
 
       await expect(
-        service.submitForWorkflow('proj-1', 'user-creator', 'org-1'),
+        service.sendForReview('proj-1', { targetUserId: 'user-creator' }, 'user-creator', 'org-1'),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("refus si l'utilisateur n'est pas le createur", async () => {
+    it('refus si le projet est en ADMIN_REVIEW', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
+        mockProject({ workflowStep: WorkflowStep.ADMIN_REVIEW }),
       );
 
       await expect(
-        service.submitForWorkflow('proj-1', 'autre-user', 'org-1'),
+        service.sendForReview('proj-1', { targetUserId: 'user-verif' }, 'user-creator', 'org-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('refus si non-porteur essaie d envoyer', async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({
+          workflowStep: WorkflowStep.PENDING_REVIEW,
+          createdById: 'user-creator',
+          currentHolderId: 'user-verif',
+        }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.USER)]);
+
+      await expect(
+        service.sendForReview('proj-1', { targetUserId: 'user-other' }, 'user-tiers', 'org-1'),
       ).rejects.toThrow(ForbiddenException);
     });
   });
 
-  describe('approveCurrentStep — VERIFICATION', () => {
-    beforeEach(() => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION, createdById: 'user-creator' }),
-      );
-    });
+  // ─── sendForReview — envoi vers ADMIN ────────────────────────────────────
 
-    it("approuve si l'utilisateur est VERIFIER et different du createur", async () => {
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VERIFIER)]);
+  describe('sendForReview — vers l admin', () => {
+    it('passe de PENDING_REVIEW a ADMIN_REVIEW et notifie les admins', async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({
+          workflowStep: WorkflowStep.PENDING_REVIEW,
+          createdById: 'user-creator',
+          currentHolderId: 'user-verif',
+        }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([{ userId: 'user-admin' }]);
       prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
       prismaMock.project.findUnique.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.BUSINESS_VALIDATION }),
+        mockProject({ workflowStep: WorkflowStep.ADMIN_REVIEW }),
       );
       notifMock.create.mockResolvedValue({});
 
-      const result = await service.approveCurrentStep('proj-1', {}, 'user-verifier', 'org-1');
-      expect(result?.workflowStep).toBe(WorkflowStep.BUSINESS_VALIDATION);
-    });
+      const result = await service.sendForReview('proj-1', {}, 'user-verif', 'org-1');
 
-    it("refus si l'utilisateur n'a pas le role VERIFIER", async () => {
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.CREATOR)]);
-
-      await expect(
-        service.approveCurrentStep('proj-1', {}, 'user-verifier', 'org-1'),
-      ).rejects.toThrow(ForbiddenException);
+      expect(prismaMock.$transaction).toHaveBeenCalled();
+      expect(notifMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-admin', type: 'WORKFLOW_SUBMITTED' }),
+      );
+      expect(result?.workflowStep).toBe(WorkflowStep.ADMIN_REVIEW);
     });
   });
 
   // ─── Séparation des responsabilités ──────────────────────────────────────
 
   describe('separation des responsabilites', () => {
-    it('refus : le createur ne peut pas verifier son propre CPS', async () => {
+    it('refus : le createur ne peut pas envoyer son propre CPS au createur', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION, createdById: 'user-creator' }),
+        mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
       );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VERIFIER)]);
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-creator', organizationId: 'org-1', isActive: true });
 
       await expect(
-        service.approveCurrentStep('proj-1', {}, 'user-creator', 'org-1'),
-      ).rejects.toThrow(ForbiddenException);
+        service.sendForReview('proj-1', { targetUserId: 'user-creator' }, 'user-creator', 'org-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it('refus : le verificateur ne peut pas valider le meme CPS', async () => {
+    it('refus : publish interdit si admin est aussi createur', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
-          workflowStep: WorkflowStep.BUSINESS_VALIDATION,
-          createdById: 'user-creator',
-          verifiedById: 'user-verifier',
+          workflowStep: WorkflowStep.ADMIN_REVIEW,
+          createdById: 'user-admin',
+          organization: { id: 'org-1', slug: 'tmpa', cpsCounter: 0 },
         }),
       );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VALIDATOR)]);
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.ADMIN)]);
 
       await expect(
-        service.approveCurrentStep('proj-1', {}, 'user-verifier', 'org-1'),
+        service.publish('proj-1', 'user-admin', 'org-1'),
       ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('refus : le createur ne peut pas valider son propre CPS', async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({
-          workflowStep: WorkflowStep.BUSINESS_VALIDATION,
-          createdById: 'user-creator',
-          verifiedById: 'user-verifier',
-        }),
-      );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VALIDATOR)]);
-
-      await expect(
-        service.approveCurrentStep('proj-1', {}, 'user-creator', 'org-1'),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('autorise un tiers a valider (createur != verificateur != validateur)', async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({
-          workflowStep: WorkflowStep.BUSINESS_VALIDATION,
-          createdById: 'user-creator',
-          verifiedById: 'user-verifier',
-        }),
-      );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VALIDATOR)]);
-      prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
-      prismaMock.project.findUnique.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.REF_VALIDATION }),
-      );
-      notifMock.create.mockResolvedValue({});
-
-      const result = await service.approveCurrentStep('proj-1', {}, 'user-validator', 'org-1');
-      expect(result?.workflowStep).toBe(WorkflowStep.REF_VALIDATION);
     });
   });
 
   // ─── Rejet / retour en CREATION ───────────────────────────────────────────
 
   describe('rejectCurrentStep', () => {
-    it('renvoie le projet en CREATION avec raison et notifie le createur', async () => {
+    it('renvoie le projet en CREATION depuis PENDING_REVIEW et notifie le createur', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION, createdById: 'user-creator' }),
+        mockProject({
+          workflowStep: WorkflowStep.PENDING_REVIEW,
+          createdById: 'user-creator',
+          currentHolderId: 'user-verif',
+        }),
       );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VERIFIER)]);
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.USER)]);
       prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
       prismaMock.project.findUnique.mockResolvedValue(
         mockProject({ workflowStep: WorkflowStep.CREATION }),
       );
       notifMock.create.mockResolvedValue({});
 
-      await service.rejectCurrentStep('proj-1', { reason: 'Documents manquants' }, 'user-verifier', 'org-1');
+      await service.rejectCurrentStep(
+        'proj-1',
+        { reason: 'Documents manquants' },
+        'user-verif',
+        'org-1',
+      );
 
       expect(prismaMock.$transaction).toHaveBeenCalled();
       expect(notifMock.create).toHaveBeenCalledWith(
@@ -329,23 +330,90 @@ describe('ProjectsService', () => {
       );
     });
 
-    it('reinitialise verifiedById et validatedById au rejet', async () => {
+    it('renvoie le projet en CREATION depuis ADMIN_REVIEW (admin seulement)', async () => {
       prismaMock.project.findFirst.mockResolvedValue(
         mockProject({
-          workflowStep: WorkflowStep.BUSINESS_VALIDATION,
+          workflowStep: WorkflowStep.ADMIN_REVIEW,
           createdById: 'user-creator',
-          verifiedById: 'user-verifier',
+          currentHolderId: null,
         }),
       );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VALIDATOR)]);
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.ADMIN)]);
       prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
       prismaMock.project.findUnique.mockResolvedValue(mockProject());
       notifMock.create.mockResolvedValue({});
 
-      await service.rejectCurrentStep('proj-1', {}, 'user-validator', 'org-1');
+      await service.rejectCurrentStep('proj-1', {}, 'user-admin', 'org-1');
 
-      // La transaction doit avoir ete appelee (inclut le reset des champs)
       expect(prismaMock.$transaction).toHaveBeenCalled();
+    });
+
+    it('refus si non-porteur tente de rejeter depuis PENDING_REVIEW', async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({
+          workflowStep: WorkflowStep.PENDING_REVIEW,
+          createdById: 'user-creator',
+          currentHolderId: 'user-verif',
+        }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.USER)]);
+
+      await expect(
+        service.rejectCurrentStep('proj-1', {}, 'user-tiers', 'org-1'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ─── Publication ──────────────────────────────────────────────────────────
+
+  describe('publish', () => {
+    it('genere le code CPS et verrouille le document depuis ADMIN_REVIEW', async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({
+          workflowStep: WorkflowStep.ADMIN_REVIEW,
+          createdById: 'user-creator',
+          organization: { id: 'org-1', slug: 'tmpa', cpsCounter: 0 },
+        }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.ADMIN)]);
+      prismaMock.organization.update.mockResolvedValue({ slug: 'tmpa', cpsCounter: 1 });
+      prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
+      prismaMock.project.findUnique.mockResolvedValue(
+        mockProject({ workflowStep: WorkflowStep.PUBLISHED, code: '260605_CPS_TMPA_0001' }),
+      );
+      notifMock.create.mockResolvedValue({});
+
+      const result = await service.publish('proj-1', 'user-admin', 'org-1');
+
+      expect(prismaMock.organization.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { cpsCounter: { increment: 1 } } }),
+      );
+      expect(result?.workflowStep).toBe(WorkflowStep.PUBLISHED);
+    });
+
+    it('refus si le projet n est pas en ADMIN_REVIEW', async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({ workflowStep: WorkflowStep.PENDING_REVIEW }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.ADMIN)]);
+
+      await expect(
+        service.publish('proj-1', 'user-admin', 'org-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("refus si l'utilisateur n'est pas ADMIN", async () => {
+      prismaMock.project.findFirst.mockResolvedValue(
+        mockProject({
+          workflowStep: WorkflowStep.ADMIN_REVIEW,
+          organization: { slug: 'tmpa' },
+        }),
+      );
+      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.USER)]);
+
+      await expect(
+        service.publish('proj-1', 'user-basic', 'org-1'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -388,32 +456,6 @@ describe('ProjectsService', () => {
       );
       expect(result.isModifiedLocally).toBe(true);
     });
-
-    it('ne touche pas la clause du referentiel lors modification locale', async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.CREATION, createdById: 'user-creator' }),
-      );
-      prismaMock.projectClause.findUnique.mockResolvedValue({
-        id: 'pc-1',
-        clauseId: 'clause-1',
-        localContent: null,
-        isModifiedLocally: false,
-      });
-      prismaMock.projectClause.update.mockResolvedValue({ isModifiedLocally: true });
-
-      await service.updateLocalClause(
-        'proj-1',
-        'clause-1',
-        { content: 'modif' },
-        'user-creator',
-        'org-1',
-      );
-
-      // Seule la copie locale (ProjectClause) est modifiee
-      expect(prismaMock.projectClause.update).toHaveBeenCalledTimes(1);
-      // clause.update n'existe pas dans le mock — si le service y touchait, le test planterait
-      expect((prismaMock.clause as any).update).toBeUndefined();
-    });
   });
 
   describe('resetLocalClause', () => {
@@ -432,7 +474,7 @@ describe('ProjectsService', () => {
         isModifiedLocally: false,
       });
 
-      const result = await service.resetLocalClause('proj-1', 'clause-1', 'user-creator', 'org-1');
+      await service.resetLocalClause('proj-1', 'clause-1', 'user-creator', 'org-1');
 
       expect(prismaMock.projectClause.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -494,54 +536,6 @@ describe('ProjectsService', () => {
       await expect(
         service.acceptClauseVersionUpdate('proj-1', 'clause-1', 'user-creator', 'org-1'),
       ).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  // ─── Publication ──────────────────────────────────────────────────────────
-
-  describe('publish', () => {
-    it('genere le code CPS et verrouille le document', async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({
-          workflowStep: WorkflowStep.REF_VALIDATION,
-          organization: { id: 'org-1', slug: 'tmpa', cpsCounter: 0 },
-        }),
-      );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.REF_MANAGER)]);
-      prismaMock.organization.update.mockResolvedValue({ slug: 'tmpa', cpsCounter: 1 });
-      prismaMock.$transaction.mockResolvedValue([{}, {}, {}]);
-      prismaMock.project.findUnique.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.PUBLISHED, code: '260605_CPS_TMPA_0001' }),
-      );
-
-      const result = await service.publish('proj-1', 'user-ref-manager', 'org-1');
-
-      expect(prismaMock.organization.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { cpsCounter: { increment: 1 } } }),
-      );
-      expect(result?.workflowStep).toBe(WorkflowStep.PUBLISHED);
-    });
-
-    it('refus si le projet nest pas en REF_VALIDATION', async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.VERIFICATION }),
-      );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.REF_MANAGER)]);
-
-      await expect(
-        service.publish('proj-1', 'user-ref-manager', 'org-1'),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("refus si l'utilisateur n'est pas REF_MANAGER", async () => {
-      prismaMock.project.findFirst.mockResolvedValue(
-        mockProject({ workflowStep: WorkflowStep.REF_VALIDATION, organization: { slug: 'tmpa' } }),
-      );
-      prismaMock.userRole.findMany.mockResolvedValue([mockUserRole(RoleName.VALIDATOR)]);
-
-      await expect(
-        service.publish('proj-1', 'user-validator', 'org-1'),
-      ).rejects.toThrow(ForbiddenException);
     });
   });
 

@@ -105,12 +105,12 @@ describe('ArticlesService', () => {
   });
 
   describe('update() — unit freezing', () => {
-    it('allows title change on PUBLISHED article for REF_MANAGER', async () => {
+    it('allows title change on PUBLISHED article for ADMIN', async () => {
       const prisma = makePrisma({ cycle: ArticleCycle.PUBLISHED, code: 'ART-0001' });
       const svc = new ArticlesService(prisma as never);
 
       await expect(
-        svc.update('art-1', { title: 'New Title' }, ORG, [RoleName.REF_MANAGER]),
+        svc.update('art-1', { title: 'New Title' }, ORG, [RoleName.ADMIN]),
       ).resolves.toBeTruthy();
     });
 
@@ -119,7 +119,7 @@ describe('ArticlesService', () => {
       const svc = new ArticlesService(prisma as never);
 
       await expect(
-        svc.update('art-1', { unit: 'kg' }, ORG, [RoleName.REF_MANAGER]),
+        svc.update('art-1', { unit: 'kg' }, ORG, [RoleName.ADMIN]),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -128,16 +128,16 @@ describe('ArticlesService', () => {
       const svc = new ArticlesService(prisma as never);
 
       await expect(
-        svc.update('art-1', { unit: 'kg' }, ORG, [RoleName.CREATOR]),
+        svc.update('art-1', { unit: 'kg' }, ORG, [RoleName.USER]),
       ).resolves.toBeTruthy();
     });
 
-    it('rejects CREATOR editing a PUBLISHED article', async () => {
+    it('rejects USER editing a PUBLISHED article', async () => {
       const prisma = makePrisma({ cycle: ArticleCycle.PUBLISHED, code: 'ART-0001' });
       const svc = new ArticlesService(prisma as never);
 
       await expect(
-        svc.update('art-1', { title: 'New Title' }, ORG, [RoleName.CREATOR]),
+        svc.update('art-1', { title: 'New Title' }, ORG, [RoleName.USER]),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -146,7 +146,7 @@ describe('ArticlesService', () => {
       const svc = new ArticlesService(prisma as never);
 
       await expect(
-        svc.update('art-1', { title: 'x' }, ORG, [RoleName.REF_MANAGER]),
+        svc.update('art-1', { title: 'x' }, ORG, [RoleName.ADMIN]),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });

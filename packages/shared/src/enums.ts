@@ -1,10 +1,7 @@
 export enum RoleName {
   SUPER_ADMIN = 'SUPER_ADMIN',
-  ORG_ADMIN = 'ORG_ADMIN',
-  REF_MANAGER = 'REF_MANAGER',
-  CREATOR = 'CREATOR',
-  VERIFIER = 'VERIFIER',
-  VALIDATOR = 'VALIDATOR',
+  ADMIN = 'ADMIN',
+  USER = 'USER',
 }
 
 export enum ArticleCycle {
@@ -23,21 +20,37 @@ export enum ProjectType {
   E = 'E',
 }
 
-/** Étapes du workflow : Créateur → Vérificateur → Validateur Métier → Resp. Référentiel → Publication */
+/**
+ * Étapes du workflow CPS.
+ *
+ * CREATION       – le porteur (créateur ou détenteur actuel) travaille sur le projet.
+ * PENDING_REVIEW – le projet est chez un utilisateur désigné pour vérification.
+ * ADMIN_REVIEW   – le projet est chez l'administrateur pour validation et publication.
+ * PUBLISHED      – CPS publié et figé.
+ * ARCHIVED       – ancienne version archivée.
+ */
 export enum WorkflowStep {
   CREATION = 'CREATION',
-  VERIFICATION = 'VERIFICATION',
-  BUSINESS_VALIDATION = 'BUSINESS_VALIDATION',
-  REF_VALIDATION = 'REF_VALIDATION',
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  ADMIN_REVIEW = 'ADMIN_REVIEW',
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED',
 }
 
-/** Actions possibles à chaque étape du workflow */
+/**
+ * Actions de workflow côté frontend (routing vers les bons endpoints).
+ * Distinct de l'enum Prisma qui stocke l'historique en base.
+ *
+ * SEND_TO_USER        → POST /workflow/send  { targetUserId }
+ * SEND_TO_ADMIN       → POST /workflow/send  (sans targetUserId)
+ * REQUEST_MODIFICATION→ POST /workflow/request-modification
+ * REJECT              → POST /workflow/reject
+ * PUBLISH             → POST /workflow/publish
+ */
 export enum WorkflowAction {
-  SUBMIT = 'SUBMIT',
-  APPROVE = 'APPROVE',
-  REJECT = 'REJECT',
+  SEND_TO_USER = 'SEND_TO_USER',
+  SEND_TO_ADMIN = 'SEND_TO_ADMIN',
   REQUEST_MODIFICATION = 'REQUEST_MODIFICATION',
+  REJECT = 'REJECT',
   PUBLISH = 'PUBLISH',
 }

@@ -17,6 +17,7 @@ import { ShareProjectDto, UpdateShareDto } from './dto/share-project.dto';
 import { SelectArticlesDto } from './dto/select-articles.dto';
 import { AddClauseToProjectDto, UpdateProjectClauseDto } from './dto/update-project-clause.dto';
 import { WorkflowActionDto } from './dto/workflow-action.dto';
+import { WorkflowSendDto } from './dto/workflow-send.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -184,20 +185,18 @@ export class ProjectsController {
 
   // ─── Workflow ─────────────────────────────────────────────────────────────
 
-  @Post(':id/workflow/submit')
+  /**
+   * Envoie le projet à un utilisateur (targetUserId présent → PENDING_REVIEW)
+   * ou à l'admin (targetUserId absent → ADMIN_REVIEW).
+   */
+  @Post(':id/workflow/send')
   @RequirePermissions('projects:create')
-  submitForWorkflow(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.projectsService.submitForWorkflow(id, user.sub, user.organizationId!);
-  }
-
-  @Post(':id/workflow/approve')
-  @RequirePermissions('workflow:act')
-  approveCurrentStep(
+  sendForReview(
     @Param('id') id: string,
-    @Body() dto: WorkflowActionDto,
+    @Body() dto: WorkflowSendDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.projectsService.approveCurrentStep(id, dto, user.sub, user.organizationId!);
+    return this.projectsService.sendForReview(id, dto, user.sub, user.organizationId!);
   }
 
   @Post(':id/workflow/reject')

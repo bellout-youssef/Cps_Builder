@@ -36,7 +36,7 @@ describe('PermissionsGuard', () => {
 
   it('passes when no permissions are required', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
-    const user: JwtPayload = { sub: '1', email: 'a@b.com', organizationId: null, roles: [RoleName.CREATOR] };
+    const user: JwtPayload = { sub: '1', email: 'a@b.com', organizationId: null, roles: [RoleName.USER] };
     const ctx = makeContext(user);
     expect(guard.canActivate(ctx)).toBe(true);
   });
@@ -50,12 +50,12 @@ describe('PermissionsGuard', () => {
     expect(guard.canActivate(makeContext(user))).toBe(true);
   });
 
-  it('denies CREATOR access to org:manage', () => {
+  it('denies USER access to org:manage', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['org:manage'];
     });
-    const user: JwtPayload = { sub: '1', email: 'a@b.com', organizationId: 'org1', roles: [RoleName.CREATOR] };
+    const user: JwtPayload = { sub: '1', email: 'a@b.com', organizationId: 'org1', roles: [RoleName.USER] };
     expect(guard.canActivate(makeContext(user))).toBe(false);
   });
 
@@ -68,14 +68,14 @@ describe('PermissionsGuard', () => {
     expect(guard.canActivate(makeContext(user))).toBe(false);
   });
 
-  it('allows CREATOR + VERIFIER to satisfy projects:create AND projects:verify', () => {
+  it('allows USER to satisfy projects:create AND projects:verify', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
       if (key === 'isPublic') return false;
       return ['projects:create', 'projects:verify'];
     });
     const user: JwtPayload = {
       sub: '1', email: 'a@b.com', organizationId: 'org1',
-      roles: [RoleName.CREATOR, RoleName.VERIFIER],
+      roles: [RoleName.USER],
     };
     expect(guard.canActivate(makeContext(user))).toBe(true);
   });

@@ -17,6 +17,13 @@ export class UsersController {
     return this.usersService.findAll(user.organizationId!);
   }
 
+  /** Membres de l'org (id/name/email) pour le dropdown workflow — accessible à tous les USER/ADMIN. */
+  @Get('org-members')
+  @RequirePermissions('projects:read')
+  findOrgMembers(@CurrentUser() user: JwtPayload) {
+    return this.usersService.findOrgMembers(user.organizationId!);
+  }
+
   @Post()
   @RequirePermissions('users:manage')
   create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {

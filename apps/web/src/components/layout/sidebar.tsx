@@ -70,11 +70,8 @@ const NAV_ITEMS: NavItem[] = [
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Administrateur',
-  ORG_ADMIN: 'Admin Organisation',
-  REF_MANAGER: 'Resp. Référentiel',
-  CREATOR: 'Créateur',
-  VERIFIER: 'Vérificateur',
-  VALIDATOR: 'Validateur',
+  ADMIN: 'Administrateur',
+  USER: 'Utilisateur',
 };
 
 export function Sidebar() {

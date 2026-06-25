@@ -36,31 +36,34 @@ export type Permission =
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permission>>> = {
   [RoleName.SUPER_ADMIN]: ['org:manage', 'org:view', 'subscriptions:manage', 'support:access'],
-  [RoleName.ORG_ADMIN]: [
+
+  // ADMIN = union ORG_ADMIN + REF_MANAGER + CREATOR + VERIFIER + VALIDATOR
+  [RoleName.ADMIN]: [
     'users:manage',
     'roles:manage',
     'settings:manage',
-    'projects:read',
-    'referential:read',
-    'audit:read',
-  ],
-  [RoleName.REF_MANAGER]: [
     'referential:manage',
     'referential:publish',
     'cps:publish',
     'articles:edit_draft',
     'clauses:edit_draft',
+    'workflow:act',
+    'projects:create',
     'projects:read',
+    'projects:verify',
+    'projects:validate',
     'referential:read',
     'audit:read',
   ],
-  [RoleName.CREATOR]: [
+
+  // USER = CREATOR + VERIFIER (restriction own-project appliquée côté backend)
+  [RoleName.USER]: [
     'projects:create',
     'articles:edit_draft',
     'clauses:edit_draft',
+    'projects:verify',
+    'workflow:act',
     'projects:read',
     'referential:read',
   ],
-  [RoleName.VERIFIER]: ['projects:verify', 'projects:read', 'referential:read'],
-  [RoleName.VALIDATOR]: ['projects:validate', 'projects:read', 'referential:read'],
 } as const;

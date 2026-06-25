@@ -302,18 +302,18 @@ export default function DashboardPage() {
   const myTasks = projects.filter((p) => {
     if (!user) return false;
     if (
-      user.roles.includes(RoleName.VERIFIER) &&
+      user.roles.includes(RoleName.USER) &&
       p.workflowStep === WorkflowStep.VERIFICATION &&
       p.verifiedById === user.sub
     )
       return true;
     if (
-      user.roles.includes(RoleName.VALIDATOR) &&
+      user.roles.includes(RoleName.ADMIN) &&
       p.workflowStep === WorkflowStep.BUSINESS_VALIDATION &&
       p.validatedById === user.sub
     )
       return true;
-    if (user.roles.includes(RoleName.REF_MANAGER) && p.workflowStep === WorkflowStep.REF_VALIDATION)
+    if (user.roles.includes(RoleName.ADMIN) && p.workflowStep === WorkflowStep.REF_VALIDATION)
       return true;
     return false;
   });

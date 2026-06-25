@@ -10,33 +10,32 @@ export type Permission =
   | 'org:view'
   | 'subscriptions:manage'
   | 'support:access'
-  // ORG_ADMIN
+  // ADMIN — gestion organisation
   | 'users:manage'
   | 'roles:manage'
   | 'settings:manage'
-  // REF_MANAGER
+  // ADMIN — référentiel
   | 'referential:manage'
   | 'referential:publish'
   | 'cps:publish'
-  // CREATOR
+  // ADMIN + USER — projets et contenu
   | 'projects:create'
   | 'articles:edit_draft'
   | 'clauses:edit_draft'
-  // VERIFIER
   | 'projects:verify'
-  // VALIDATOR
   | 'projects:validate'
-  // Acte de workflow (approbation / rejet / demande modif) — VERIFIER + VALIDATOR + REF_MANAGER
   | 'workflow:act'
-  // Lecture partagée (tous les rôles métier, PAS le SUPER_ADMIN)
+  // Lecture partagée (ADMIN + USER, PAS SUPER_ADMIN)
   | 'projects:read'
   | 'referential:read'
-  // Journal d'audit — ORG_ADMIN + REF_MANAGER uniquement
+  // Audit — ADMIN uniquement
   | 'audit:read';
 
 /**
  * Matrice rôle → permissions.
  * SUPER_ADMIN n'a AUCUNE permission métier (section 4 CLAUDE.md).
+ * ADMIN = union ORG_ADMIN + REF_MANAGER + CREATOR + VERIFIER + VALIDATOR.
+ * USER = CREATOR + VERIFIER (la restriction own-project est appliquée dans la logique métier).
  */
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permission>>> = {
   [RoleName.SUPER_ADMIN]: [
@@ -46,44 +45,29 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permissio
     'support:access',
   ],
 
-  [RoleName.ORG_ADMIN]: [
+  [RoleName.ADMIN]: [
     'users:manage',
     'roles:manage',
     'settings:manage',
-    'projects:read',
-    'referential:read',
-    'audit:read',
-  ],
-
-  [RoleName.REF_MANAGER]: [
     'referential:manage',
     'referential:publish',
     'cps:publish',
     'articles:edit_draft',
     'clauses:edit_draft',
     'workflow:act',
+    'projects:create',
     'projects:read',
+    'projects:verify',
+    'projects:validate',
     'referential:read',
     'audit:read',
   ],
 
-  [RoleName.CREATOR]: [
+  [RoleName.USER]: [
     'projects:create',
     'articles:edit_draft',
     'clauses:edit_draft',
-    'projects:read',
-    'referential:read',
-  ],
-
-  [RoleName.VERIFIER]: [
     'projects:verify',
-    'workflow:act',
-    'projects:read',
-    'referential:read',
-  ],
-
-  [RoleName.VALIDATOR]: [
-    'projects:validate',
     'workflow:act',
     'projects:read',
     'referential:read',

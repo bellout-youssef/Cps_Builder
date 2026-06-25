@@ -23,6 +23,7 @@ import { ShareProjectDto, UpdateShareDto } from './dto/share-project.dto';
 import { SelectArticlesDto } from './dto/select-articles.dto';
 import { AddClauseToProjectDto, UpdateProjectClauseDto } from './dto/update-project-clause.dto';
 import { WorkflowActionDto } from './dto/workflow-action.dto';
+import { WorkflowSendDto } from './dto/workflow-send.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -66,9 +67,8 @@ export class ProjectsService {
 
   async findAll(userId: string, orgId: string) {
     const roles = await this.getUserRoles(userId, orgId);
-    const isAdmin = roles.includes(RoleName.ORG_ADMIN) || roles.includes(RoleName.REF_MANAGER);
 
-    if (isAdmin) {
+    if (roles.includes(RoleName.ADMIN)) {
       return this.prisma.project.findMany({
         where: { organizationId: orgId, archivedAt: null },
         include: { types: true, createdBy: { select: { id: true, name: true, email: true } } },
@@ -76,20 +76,17 @@ export class ProjectsService {
       });
     }
 
-    const visibilityCriteria: object[] = [
-      { createdById: userId },
-      { shares: { some: { userId } } },
-    ];
-
-    if (roles.includes(RoleName.VERIFIER)) {
-      visibilityCriteria.push({ workflowStep: WorkflowStep.VERIFICATION });
-    }
-    if (roles.includes(RoleName.VALIDATOR)) {
-      visibilityCriteria.push({ workflowStep: WorkflowStep.BUSINESS_VALIDATION });
-    }
-
+    // USER : ses propres projets + projets dont il est porteur + projets partagés
     return this.prisma.project.findMany({
-      where: { organizationId: orgId, archivedAt: null, OR: visibilityCriteria },
+      where: {
+        organizationId: orgId,
+        archivedAt: null,
+        OR: [
+          { createdById: userId },
+          { currentHolderId: userId },
+          { shares: { some: { userId } } },
+        ],
+      },
       include: { types: true, createdBy: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -102,6 +99,7 @@ export class ProjectsService {
         types: true,
         shares: { include: { user: { select: { id: true, name: true, email: true } } } },
         createdBy: { select: { id: true, name: true, email: true } },
+        currentHolder: { select: { id: true, name: true, email: true } },
         verifiedBy: { select: { id: true, name: true } },
         validatedBy: { select: { id: true, name: true } },
         workflowHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
@@ -136,7 +134,6 @@ export class ProjectsService {
     this.assertNotPublished(project.workflowStep);
     await this.assertCanWrite(project as any, userId, orgId);
 
-    // Vérifier que les articles existent dans l'org
     const articles = await this.prisma.article.findMany({
       where: { id: { in: dto.articleIds }, organizationId: orgId },
     });
@@ -287,7 +284,6 @@ export class ProjectsService {
     if (!pc) throw new NotFoundException('Clause non trouvée dans ce projet');
     if (!pc.hasNewerVersion) throw new BadRequestException('Aucune mise à jour disponible pour cette clause');
 
-    // Remplace le contenu par la version actuelle du référentiel
     return this.prisma.projectClause.update({
       where: { id: pc.id },
       data: {
@@ -306,7 +302,6 @@ export class ProjectsService {
     });
     if (!pc) throw new NotFoundException('Clause non trouvée dans ce projet');
 
-    // Marque la notification comme vue sans mettre à jour le contenu
     return this.prisma.projectClause.update({
       where: { id: pc.id },
       data: { hasNewerVersion: false },
@@ -319,12 +314,11 @@ export class ProjectsService {
     const project = await this.getProjectOrFail(id, orgId);
     if (project.createdById !== userId) {
       const roles = await this.getUserRoles(userId, orgId);
-      if (!roles.includes(RoleName.ORG_ADMIN)) {
+      if (!roles.includes(RoleName.ADMIN)) {
         throw new ForbiddenException('Seul le créateur ou un administrateur peut partager ce projet');
       }
     }
 
-    // L'utilisateur partagé doit appartenir à la même organisation
     const targetUser = await this.prisma.user.findFirst({
       where: { id: dto.userId, organizationId: orgId },
     });
@@ -345,7 +339,7 @@ export class ProjectsService {
     const project = await this.getProjectOrFail(id, orgId);
     if (project.createdById !== userId) {
       const roles = await this.getUserRoles(userId, orgId);
-      if (!roles.includes(RoleName.ORG_ADMIN)) {
+      if (!roles.includes(RoleName.ADMIN)) {
         throw new ForbiddenException('Seul le créateur ou un administrateur peut modifier le partage');
       }
     }
@@ -360,7 +354,7 @@ export class ProjectsService {
     const project = await this.getProjectOrFail(id, orgId);
     if (project.createdById !== userId) {
       const roles = await this.getUserRoles(userId, orgId);
-      if (!roles.includes(RoleName.ORG_ADMIN)) {
+      if (!roles.includes(RoleName.ADMIN)) {
         throw new ForbiddenException('Seul le créateur ou un administrateur peut retirer un partage');
       }
     }
@@ -382,105 +376,150 @@ export class ProjectsService {
 
   // ─── Workflow ─────────────────────────────────────────────────────────────
 
-  async submitForWorkflow(id: string, userId: string, orgId: string) {
-    const project = await this.getProjectOrFail(id, orgId);
-
-    if (project.workflowStep !== WorkflowStep.CREATION) {
-      throw new BadRequestException(`Le projet est déjà en étape ${project.workflowStep}`);
-    }
-    if (project.createdById !== userId) {
-      throw new ForbiddenException('Seul le créateur peut soumettre le projet au workflow');
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.project.update({
-        where: { id },
-        data: { workflowStep: WorkflowStep.VERIFICATION },
-      }),
-      this.prisma.workflowTransition.create({
-        data: {
-          projectId: id,
-          fromStep: WorkflowStep.CREATION,
-          toStep: WorkflowStep.VERIFICATION,
-          action: WorkflowAction.APPROVE,
-          performedById: userId,
-        },
-      }),
-      this.prisma.auditLog.create({
-        data: {
-          organizationId: orgId,
-          userId,
-          action: 'workflow.submitted',
-          entity: 'project',
-          entityId: id,
-        },
-      }),
-    ]);
-
-    return this.prisma.project.findUnique({ where: { id }, include: { types: true } });
-  }
-
-  async approveCurrentStep(id: string, dto: WorkflowActionDto, userId: string, orgId: string) {
+  /**
+   * Envoie le projet à un utilisateur désigné (PENDING_REVIEW)
+   * ou à l'admin (ADMIN_REVIEW) selon la présence de targetUserId.
+   *
+   * Peut être appelé depuis CREATION ou PENDING_REVIEW.
+   * Seul le porteur actuel (créateur ou currentHolder) peut envoyer.
+   */
+  async sendForReview(id: string, dto: WorkflowSendDto, userId: string, orgId: string) {
     const project = await this.getProjectOrFail(id, orgId);
     this.assertNotPublishedOrArchived(project.workflowStep);
 
-    await this.checkApprovePermission(project as any, userId, orgId);
-
-    const fromStep = project.workflowStep;
-    const toStep = this.getNextWorkflowStep(fromStep);
-
-    const projectUpdate: Record<string, unknown> = { workflowStep: toStep };
-    if (fromStep === WorkflowStep.VERIFICATION) {
-      projectUpdate.verifiedById = userId;
-    } else if (fromStep === WorkflowStep.BUSINESS_VALIDATION) {
-      projectUpdate.validatedById = userId;
+    if (
+      project.workflowStep !== WorkflowStep.CREATION &&
+      project.workflowStep !== WorkflowStep.PENDING_REVIEW
+    ) {
+      throw new BadRequestException(
+        `Envoi impossible depuis l'étape ${project.workflowStep} — le projet doit être en CREATION ou PENDING_REVIEW`,
+      );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.project.update({ where: { id }, data: projectUpdate as any }),
-      this.prisma.workflowTransition.create({
-        data: {
-          projectId: id,
-          fromStep,
-          toStep,
-          action: WorkflowAction.APPROVE,
-          performedById: userId,
-          reason: dto.reason,
-        },
-      }),
-      this.prisma.auditLog.create({
-        data: {
-          organizationId: orgId,
-          userId,
-          action: `workflow.${fromStep.toLowerCase()}.approved`,
-          entity: 'project',
-          entityId: id,
-          metadata: dto.reason ? ({ reason: dto.reason } as Prisma.InputJsonValue) : undefined,
-        },
-      }),
-    ]);
+    // Seul le porteur actuel peut envoyer
+    const isCreator = project.createdById === userId;
+    const isCurrentHolder = project.currentHolderId === userId;
+    if (!isCreator && !isCurrentHolder) {
+      const roles = await this.getUserRoles(userId, orgId);
+      if (!roles.includes(RoleName.ADMIN)) {
+        throw new ForbiddenException('Seul le porteur actuel du projet peut l\'envoyer');
+      }
+    }
 
-    // Notifier le créateur
-    await this.notificationsService.create({
-      organizationId: orgId,
-      userId: project.createdById,
-      projectId: id,
-      type: NotificationType.WORKFLOW_APPROVED,
-      title: `CPS approuvé — étape ${fromStep}`,
-      message: dto.reason,
-    });
+    const fromStep = project.workflowStep;
+
+    if (dto.targetUserId) {
+      // ── Envoi vers un utilisateur spécifique (PENDING_REVIEW) ─────────────
+      if (dto.targetUserId === userId) {
+        throw new BadRequestException('Impossible de s\'envoyer le projet à soi-même');
+      }
+      if (dto.targetUserId === project.createdById) {
+        throw new BadRequestException(
+          'Séparation des responsabilités : impossible d\'envoyer le projet à son créateur pour vérification',
+        );
+      }
+
+      const targetUser = await this.prisma.user.findFirst({
+        where: { id: dto.targetUserId, organizationId: orgId, isActive: true },
+      });
+      if (!targetUser) throw new NotFoundException('Utilisateur introuvable dans cette organisation');
+
+      await this.prisma.$transaction([
+        this.prisma.project.update({
+          where: { id },
+          data: {
+            workflowStep: WorkflowStep.PENDING_REVIEW,
+            currentHolderId: dto.targetUserId,
+          },
+        }),
+        this.prisma.workflowTransition.create({
+          data: {
+            projectId: id,
+            fromStep,
+            toStep: WorkflowStep.PENDING_REVIEW,
+            action: WorkflowAction.SEND_TO_USER,
+            performedById: userId,
+            reason: dto.reason,
+          },
+        }),
+        this.prisma.auditLog.create({
+          data: {
+            organizationId: orgId,
+            userId,
+            action: 'workflow.sent_to_user',
+            entity: 'project',
+            entityId: id,
+            metadata: { targetUserId: dto.targetUserId, fromStep } as Prisma.InputJsonValue,
+          },
+        }),
+      ]);
+
+      await this.notificationsService.create({
+        organizationId: orgId,
+        userId: dto.targetUserId,
+        projectId: id,
+        type: NotificationType.WORKFLOW_SUBMITTED,
+        title: `Projet à vérifier : ${project.name}`,
+        message: dto.reason,
+        metadata: { fromStep, sentBy: userId },
+      });
+    } else {
+      // ── Envoi vers l'admin (ADMIN_REVIEW) ─────────────────────────────────
+      const adminRoles = await this.prisma.userRole.findMany({
+        where: { organizationId: orgId, role: { name: RoleName.ADMIN } },
+        select: { userId: true },
+      });
+
+      await this.prisma.$transaction([
+        this.prisma.project.update({
+          where: { id },
+          data: {
+            workflowStep: WorkflowStep.ADMIN_REVIEW,
+            currentHolderId: null,
+            verifiedById: userId,  // dernier user ayant transmis à l'admin
+          },
+        }),
+        this.prisma.workflowTransition.create({
+          data: {
+            projectId: id,
+            fromStep,
+            toStep: WorkflowStep.ADMIN_REVIEW,
+            action: WorkflowAction.SEND_TO_USER,
+            performedById: userId,
+            reason: dto.reason,
+          },
+        }),
+        this.prisma.auditLog.create({
+          data: {
+            organizationId: orgId,
+            userId,
+            action: 'workflow.sent_to_admin',
+            entity: 'project',
+            entityId: id,
+            metadata: { fromStep } as Prisma.InputJsonValue,
+          },
+        }),
+      ]);
+
+      for (const adminRole of adminRoles) {
+        await this.notificationsService.create({
+          organizationId: orgId,
+          userId: adminRole.userId,
+          projectId: id,
+          type: NotificationType.WORKFLOW_SUBMITTED,
+          title: `CPS à valider : ${project.name}`,
+          message: dto.reason,
+          metadata: { fromStep, sentBy: userId },
+        });
+      }
+    }
 
     return this.prisma.project.findUnique({ where: { id }, include: { types: true } });
   }
 
-  async rejectCurrentStep(id: string, dto: WorkflowActionDto, userId: string, orgId: string) {
-    return this.sendBackToCreation(id, dto, WorkflowAction.REJECT, userId, orgId);
-  }
-
-  async requestModification(id: string, dto: WorkflowActionDto, userId: string, orgId: string) {
-    return this.sendBackToCreation(id, dto, WorkflowAction.REQUEST_MODIFICATION, userId, orgId);
-  }
-
+  /**
+   * Publication du CPS — ADMIN uniquement, depuis ADMIN_REVIEW.
+   */
   async publish(id: string, userId: string, orgId: string) {
     const project = await this.prisma.project.findFirst({
       where: { id, organizationId: orgId },
@@ -488,18 +527,24 @@ export class ProjectsService {
     });
     if (!project) throw new NotFoundException('Projet non trouvé');
 
-    if (project.workflowStep !== WorkflowStep.REF_VALIDATION) {
+    if (project.workflowStep !== WorkflowStep.ADMIN_REVIEW) {
       throw new BadRequestException(
-        `Le projet doit être en étape REF_VALIDATION pour être publié (étape actuelle : ${project.workflowStep})`,
+        `Le projet doit être en étape ADMIN_REVIEW pour être publié (étape actuelle : ${project.workflowStep})`,
       );
     }
 
     const roles = await this.getUserRoles(userId, orgId);
-    if (!roles.includes(RoleName.REF_MANAGER)) {
-      throw new ForbiddenException('Rôle REF_MANAGER requis pour publier un CPS');
+    if (!roles.includes(RoleName.ADMIN)) {
+      throw new ForbiddenException('Rôle ADMIN requis pour publier un CPS');
     }
 
-    // Incrément atomique du compteur de l'organisation
+    // Séparation des responsabilités : l'admin ne doit pas être le créateur du CPS
+    if (project.createdById === userId) {
+      throw new ForbiddenException(
+        'Séparation des responsabilités : le créateur ne peut pas publier son propre CPS',
+      );
+    }
+
     const org = await this.prisma.organization.update({
       where: { id: orgId },
       data: { cpsCounter: { increment: 1 } },
@@ -514,12 +559,14 @@ export class ProjectsService {
           workflowStep: WorkflowStep.PUBLISHED,
           code,
           publishedAt: new Date(),
+          currentHolderId: null,
+          validatedById: userId,
         },
       }),
       this.prisma.workflowTransition.create({
         data: {
           projectId: id,
-          fromStep: WorkflowStep.REF_VALIDATION,
+          fromStep: WorkflowStep.ADMIN_REVIEW,
           toStep: WorkflowStep.PUBLISHED,
           action: WorkflowAction.APPROVE,
           performedById: userId,
@@ -539,12 +586,28 @@ export class ProjectsService {
 
     const published = await this.prisma.project.findUnique({ where: { id }, include: { types: true } });
 
-    // Génération asynchrone des documents (HTML, DOCX, PDF, BDP, ESTIM)
     this.publicationService.generateAndStore(id, orgId).catch((err: unknown) => {
       this.logger.error(`Échec génération documents pour ${code}: ${err instanceof Error ? err.message : String(err)}`);
     });
 
+    // Notifier le créateur
+    await this.notificationsService.create({
+      organizationId: orgId,
+      userId: project.createdById,
+      projectId: id,
+      type: NotificationType.WORKFLOW_APPROVED,
+      title: `CPS publié — ${code}`,
+    });
+
     return published;
+  }
+
+  async rejectCurrentStep(id: string, dto: WorkflowActionDto, userId: string, orgId: string) {
+    return this.sendBackToCreation(id, dto, WorkflowAction.REJECT, userId, orgId);
+  }
+
+  async requestModification(id: string, dto: WorkflowActionDto, userId: string, orgId: string) {
+    return this.sendBackToCreation(id, dto, WorkflowAction.REQUEST_MODIFICATION, userId, orgId);
   }
 
   // ─── Versionnement ────────────────────────────────────────────────────────
@@ -557,18 +620,16 @@ export class ProjectsService {
     if (!original) throw new NotFoundException('Projet publié non trouvé');
 
     const roles = await this.getUserRoles(userId, orgId);
-    if (!roles.includes(RoleName.REF_MANAGER) && !roles.includes(RoleName.ORG_ADMIN)) {
-      throw new ForbiddenException('Rôle REF_MANAGER ou ORG_ADMIN requis pour créer une nouvelle version');
+    if (!roles.includes(RoleName.ADMIN)) {
+      throw new ForbiddenException('Rôle ADMIN requis pour créer une nouvelle version');
     }
 
     const newProject = await this.prisma.$transaction(async (tx) => {
-      // Archiver l'ancienne version
       await tx.project.update({
         where: { id },
         data: { workflowStep: WorkflowStep.ARCHIVED, archivedAt: new Date() },
       });
 
-      // Créer le nouveau projet
       const created = await tx.project.create({
         data: {
           organizationId: orgId,
@@ -581,14 +642,12 @@ export class ProjectsService {
         },
       });
 
-      // Dupliquer les sélections d'articles
       if (original.articles.length > 0) {
         await tx.projectArticle.createMany({
           data: original.articles.map((a) => ({ projectId: created.id, articleId: a.articleId })),
         });
       }
 
-      // Dupliquer les clauses (copies locales conservées)
       if (original.clauses.length > 0) {
         await tx.projectClause.createMany({
           data: original.clauses.map((c) => ({
@@ -644,14 +703,14 @@ export class ProjectsService {
   private async sendBackToCreation(
     id: string,
     dto: WorkflowActionDto,
-    action: Exclude<WorkflowAction, 'APPROVE'>,
+    action: Exclude<WorkflowAction, 'APPROVE' | 'SEND_TO_USER'>,
     userId: string,
     orgId: string,
   ) {
     const project = await this.getProjectOrFail(id, orgId);
     this.assertNotPublishedOrArchived(project.workflowStep);
 
-    await this.checkActionPermission(project as any, userId, orgId);
+    await this.checkSendBackPermission(project as any, userId, orgId);
 
     const fromStep = project.workflowStep;
 
@@ -660,6 +719,7 @@ export class ProjectsService {
         where: { id },
         data: {
           workflowStep: WorkflowStep.CREATION,
+          currentHolderId: null,
           verifiedById: null,
           validatedById: null,
         },
@@ -704,89 +764,44 @@ export class ProjectsService {
     return this.prisma.project.findUnique({ where: { id }, include: { types: true } });
   }
 
-  private async checkApprovePermission(
+  /**
+   * Contrôle qui peut rejeter / demander modification.
+   * - PENDING_REVIEW : le porteur actuel (currentHolder) ≠ créateur
+   * - ADMIN_REVIEW   : ADMIN uniquement
+   */
+  private async checkSendBackPermission(
     project: {
       workflowStep: WorkflowStep;
       createdById: string;
-      verifiedById: string | null;
-      validatedById: string | null;
+      currentHolderId: string | null;
     },
     userId: string,
     orgId: string,
   ) {
     const roles = await this.getUserRoles(userId, orgId);
+    const isAdmin = roles.includes(RoleName.ADMIN);
 
     switch (project.workflowStep) {
-      case WorkflowStep.VERIFICATION:
-        if (!roles.includes(RoleName.VERIFIER)) {
-          throw new ForbiddenException('Rôle VERIFIER requis pour cette étape');
+      case WorkflowStep.PENDING_REVIEW:
+        if (project.currentHolderId !== userId && !isAdmin) {
+          throw new ForbiddenException('Seul le porteur actuel du projet peut agir à cette étape');
         }
         if (project.createdById === userId) {
           throw new ForbiddenException(
-            'Séparation des responsabilités : le créateur ne peut pas vérifier son propre CPS',
+            'Séparation des responsabilités : le créateur ne peut pas agir sur son propre CPS en vérification',
           );
         }
         break;
 
-      case WorkflowStep.BUSINESS_VALIDATION:
-        if (!roles.includes(RoleName.VALIDATOR)) {
-          throw new ForbiddenException('Rôle VALIDATOR requis pour cette étape');
-        }
-        if (project.createdById === userId) {
-          throw new ForbiddenException(
-            'Séparation des responsabilités : le créateur ne peut pas valider son propre CPS',
-          );
-        }
-        if (project.verifiedById === userId) {
-          throw new ForbiddenException(
-            'Séparation des responsabilités : le vérificateur ne peut pas valider le même CPS',
-          );
-        }
-        break;
-
-      case WorkflowStep.REF_VALIDATION:
-        if (!roles.includes(RoleName.REF_MANAGER)) {
-          throw new ForbiddenException('Rôle REF_MANAGER requis pour valider cette étape');
+      case WorkflowStep.ADMIN_REVIEW:
+        if (!isAdmin) {
+          throw new ForbiddenException('Rôle ADMIN requis pour agir à l\'étape ADMIN_REVIEW');
         }
         break;
 
       default:
-        throw new BadRequestException(`Aucune approbation possible à l'étape ${project.workflowStep}`);
+        throw new BadRequestException(`Aucune action possible à l'étape ${project.workflowStep}`);
     }
-  }
-
-  private async checkActionPermission(
-    project: { workflowStep: WorkflowStep },
-    userId: string,
-    orgId: string,
-  ) {
-    const roles = await this.getUserRoles(userId, orgId);
-
-    const stepRoleMap: Record<string, RoleName> = {
-      [WorkflowStep.VERIFICATION]: RoleName.VERIFIER,
-      [WorkflowStep.BUSINESS_VALIDATION]: RoleName.VALIDATOR,
-      [WorkflowStep.REF_VALIDATION]: RoleName.REF_MANAGER,
-    };
-
-    const requiredRole = stepRoleMap[project.workflowStep];
-    if (!requiredRole) {
-      throw new BadRequestException(`Aucune action possible à l'étape ${project.workflowStep}`);
-    }
-    if (!roles.includes(requiredRole)) {
-      throw new ForbiddenException(`Rôle ${requiredRole} requis pour agir à cette étape`);
-    }
-  }
-
-  private getNextWorkflowStep(current: WorkflowStep): WorkflowStep {
-    const transitions: Partial<Record<WorkflowStep, WorkflowStep>> = {
-      [WorkflowStep.CREATION]: WorkflowStep.VERIFICATION,
-      [WorkflowStep.VERIFICATION]: WorkflowStep.BUSINESS_VALIDATION,
-      [WorkflowStep.BUSINESS_VALIDATION]: WorkflowStep.REF_VALIDATION,
-      [WorkflowStep.REF_VALIDATION]: WorkflowStep.PUBLISHED,
-    };
-    const next = transitions[current];
-    if (!next) throw new BadRequestException(`Pas d'étape suivante pour ${current}`);
-    return next;
   }
 
   private async getUserRoles(userId: string, orgId: string): Promise<RoleName[]> {
@@ -798,34 +813,37 @@ export class ProjectsService {
   }
 
   private async assertCanRead(
-    project: { createdById: string; shares: Array<{ userId: string }> },
+    project: {
+      createdById: string;
+      currentHolderId: string | null;
+      shares: Array<{ userId: string }>;
+    },
     userId: string,
     orgId: string,
   ) {
     if (project.createdById === userId) return;
+    if (project.currentHolderId === userId) return;
     if (project.shares.some((s) => s.userId === userId)) return;
     const roles = await this.getUserRoles(userId, orgId);
-    if (
-      roles.includes(RoleName.ORG_ADMIN) ||
-      roles.includes(RoleName.REF_MANAGER) ||
-      roles.includes(RoleName.VERIFIER) ||
-      roles.includes(RoleName.VALIDATOR)
-    ) {
-      return;
-    }
+    if (roles.includes(RoleName.ADMIN) || roles.includes(RoleName.USER)) return;
     throw new ForbiddenException("Vous n'avez pas accès à ce projet");
   }
 
   private async assertCanWrite(
-    project: { createdById: string; shares: Array<{ userId: string; permission: SharePermission }> },
+    project: {
+      createdById: string;
+      currentHolderId: string | null;
+      shares: Array<{ userId: string; permission: SharePermission }>;
+    },
     userId: string,
     orgId: string,
   ) {
     if (project.createdById === userId) return;
+    if (project.currentHolderId === userId) return;
     const share = project.shares.find((s) => s.userId === userId);
     if (share?.permission === SharePermission.WRITE) return;
     const roles = await this.getUserRoles(userId, orgId);
-    if (roles.includes(RoleName.ORG_ADMIN)) return;
+    if (roles.includes(RoleName.ADMIN)) return;
     throw new ForbiddenException("Vous n'avez pas les droits de modification sur ce projet");
   }
 
@@ -854,6 +872,4 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Projet non trouvé');
     return project;
   }
-
 }
-

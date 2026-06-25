@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
@@ -12,7 +12,15 @@ import {
 } from 'lucide-react';
 import { WorkflowStep, WorkflowAction } from '@cps/shared';
 import { useAuth } from '@/contexts/auth-context';
-import { getProject, transitionWorkflow, type ProjectDetail } from '@/lib/api/projects';
+import {
+  getProject,
+  sendForReview,
+  requestModification,
+  rejectProject,
+  publishProject,
+  type ProjectDetail,
+} from '@/lib/api/projects';
+import { getOrgMembers, type OrgMember } from '@/lib/api/admin';
 import { Header } from '@/components/layout/header';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/card';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
@@ -26,18 +34,16 @@ import Link from 'next/link';
 
 const STEP_LABEL: Record<WorkflowStep, string> = {
   [WorkflowStep.CREATION]: 'En création',
-  [WorkflowStep.VERIFICATION]: 'En vérification',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'Validation métier',
-  [WorkflowStep.REF_VALIDATION]: 'Validation référentiel',
+  [WorkflowStep.PENDING_REVIEW]: 'En vérification',
+  [WorkflowStep.ADMIN_REVIEW]: 'Validation admin',
   [WorkflowStep.PUBLISHED]: 'Publié',
   [WorkflowStep.ARCHIVED]: 'Archivé',
 };
 
 const STEP_BADGE: Record<WorkflowStep, BadgeVariant> = {
   [WorkflowStep.CREATION]: 'default',
-  [WorkflowStep.VERIFICATION]: 'warning',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'warning',
-  [WorkflowStep.REF_VALIDATION]: 'warning',
+  [WorkflowStep.PENDING_REVIEW]: 'warning',
+  [WorkflowStep.ADMIN_REVIEW]: 'warning',
   [WorkflowStep.PUBLISHED]: 'success',
   [WorkflowStep.ARCHIVED]: 'default',
 };
@@ -58,10 +64,10 @@ type Tab = 'apercu' | 'clauses' | 'historique';
 
 export default function ProjectPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const { user, can } = useAuth();
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('apercu');
@@ -82,9 +88,39 @@ export default function ProjectPage() {
     loadProject();
   }, [loadProject]);
 
-  async function handleTransition(action: WorkflowAction, comment?: string) {
+  useEffect(() => {
+    if (can('projects:read')) {
+      getOrgMembers()
+        .then(setOrgMembers)
+        .catch(() => {});
+    }
+  }, [can]);
+
+  async function handleTransition(
+    action: WorkflowAction,
+    opts?: { targetUserId?: string; reason?: string },
+  ) {
     if (!project) return;
-    const updated = await transitionWorkflow(project.id, action, comment);
+    let updated: ProjectDetail;
+
+    switch (action) {
+      case WorkflowAction.SEND_TO_USER:
+      case WorkflowAction.SEND_TO_ADMIN:
+        updated = await sendForReview(project.id, opts ?? {});
+        break;
+      case WorkflowAction.REQUEST_MODIFICATION:
+        updated = await requestModification(project.id, opts?.reason);
+        break;
+      case WorkflowAction.REJECT:
+        updated = await rejectProject(project.id, opts?.reason);
+        break;
+      case WorkflowAction.PUBLISH:
+        updated = await publishProject(project.id);
+        break;
+      default:
+        return;
+    }
+
     setProject(updated);
   }
 
@@ -114,14 +150,12 @@ export default function ProjectPage() {
             Retour à la bibliothèque
           </Link>
 
-          {/* Loading */}
           {loading && (
             <div className="flex h-64 items-center justify-center">
               <Spinner size="lg" />
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -184,6 +218,7 @@ export default function ProjectPage() {
                     <WorkflowActions
                       project={project}
                       user={user}
+                      orgMembers={orgMembers}
                       onTransition={handleTransition}
                     />
                   </CardBody>
@@ -251,7 +286,7 @@ function AperçuTab({ project }: { project: ProjectDetail }) {
         <CardBody>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Articles</dt>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Clauses</dt>
               <dd className="mt-1 text-sm font-semibold text-slate-800">
                 {(project.clauses ?? []).length > 0 ? `${(project.clauses ?? []).length} clauses` : '—'}
               </dd>

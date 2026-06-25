@@ -11,11 +11,8 @@ datasource db {
 
 enum RoleName {
   SUPER_ADMIN
-  ORG_ADMIN
-  REF_MANAGER
-  CREATOR
-  VERIFIER
-  VALIDATOR
+  ADMIN
+  USER
 }
 
 /// Cycle de vie d'un article : Brouillon → Publication → Publié → Archivage
@@ -37,12 +34,11 @@ enum ProjectType {
 }
 
 /// Étapes du workflow CPS
-/// Créateur → Vérificateur → Validateur Métier → Responsable Référentiel → Publication
+/// CREATION → PENDING_REVIEW (chez un user) → ADMIN_REVIEW (chez l'admin) → PUBLISHED
 enum WorkflowStep {
   CREATION
-  VERIFICATION
-  BUSINESS_VALIDATION
-  REF_VALIDATION
+  PENDING_REVIEW
+  ADMIN_REVIEW
   PUBLISHED
   ARCHIVED
 }
@@ -53,11 +49,14 @@ enum SharePermission {
   WRITE
 }
 
-/// Action de workflow : valider / rejeter / demander modification
+/// Action de workflow stockée dans l'historique
+/// SEND_TO_USER = envoi au vérificateur (user ou admin)
+/// APPROVE      = publication par l'admin
 enum WorkflowAction {
   APPROVE
   REJECT
   REQUEST_MODIFICATION
+  SEND_TO_USER
 }
 
 /// Types de document généré à la publication
@@ -126,6 +125,8 @@ model User {
   roles               UserRole[]
   /// Projets créés par cet utilisateur
   projects            Project[]           @relation("ProjectCreator")
+  /// Projets dont cet utilisateur est le porteur actuel (en cours de vérification)
+  heldProjects        Project[]           @relation("ProjectCurrentHolder")
   /// Projets vérifiés par cet utilisateur (séparation des responsabilités)
   verifiedProjects    Project[]           @relation("ProjectVerifier")
   /// Projets validés par cet utilisateur (séparation des responsabilités)
@@ -201,9 +202,12 @@ model Project {
   /// true = visible uniquement par le créateur et les utilisateurs partagés
   isPrivate      Boolean      @default(true)
   createdById    String
-  /// ID du vérificateur ayant approuvé (séparation des responsabilités)
+  /// Porteur actuel du projet : null = chez le créateur ou en ADMIN_REVIEW
+  /// Renseigné quand un user spécifique reçoit le projet pour vérification
+  currentHolderId String?
+  /// ID du dernier user ayant transmis le projet à l'admin (séparation des responsabilités)
   verifiedById   String?
-  /// ID du validateur métier ayant approuvé (séparation des responsabilités)
+  /// ID de l'admin ayant publié (séparation des responsabilités)
   validatedById  String?
   /// Référence DCE auto-générée à la création — format YYMMDD_DCE_CPS_ORGSLUG_XXXXX
   dceRef          String?
@@ -216,6 +220,7 @@ model Project {
 
   organization    Organization       @relation(fields: [organizationId], references: [id])
   createdBy       User               @relation("ProjectCreator", fields: [createdById], references: [id])
+  currentHolder   User?              @relation("ProjectCurrentHolder", fields: [currentHolderId], references: [id])
   verifiedBy      User?              @relation("ProjectVerifier", fields: [verifiedById], references: [id])
   validatedBy     User?              @relation("ProjectValidator", fields: [validatedById], references: [id])
   types           ProjectTypeEntry[]
