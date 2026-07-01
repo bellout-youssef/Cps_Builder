@@ -9,15 +9,15 @@ const ACTION_CONFIG: Record<
   WorkflowAction,
   { label: string; description: string; variant: 'primary' | 'danger' | 'secondary'; requireComment: boolean }
 > = {
-  [WorkflowAction.SUBMIT]: {
+  [WorkflowAction.SEND_TO_USER]: {
     label: 'Soumettre pour vérification',
-    description: 'Le CPS sera transmis au vérificateur. Cette action ne peut pas être annulée.',
+    description: 'Le CPS sera transmis au vérificateur désigné. Cette action ne peut pas être annulée.',
     variant: 'primary',
     requireComment: false,
   },
-  [WorkflowAction.APPROVE]: {
-    label: 'Approuver',
-    description: 'Valider cette étape et transmettre à l\'étape suivante du workflow.',
+  [WorkflowAction.SEND_TO_ADMIN]: {
+    label: "Transmettre à l'administrateur",
+    description: "Le CPS sera transmis à l'administrateur pour validation et publication.",
     variant: 'primary',
     requireComment: false,
   },

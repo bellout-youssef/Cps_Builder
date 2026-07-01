@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsObject, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray, IsEnum, MaxLength } from 'class-validator';
+import { ProjectType } from '@prisma/client';
 
 export class UpdateProjectDto {
   @IsOptional()
@@ -10,6 +11,11 @@ export class UpdateProjectDto {
   @IsString()
   @MaxLength(1000)
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(ProjectType, { each: true })
+  types?: ProjectType[];
 
   @IsOptional()
   @IsObject()

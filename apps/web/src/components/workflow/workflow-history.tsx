@@ -6,24 +6,24 @@ import { clsx } from 'clsx';
 import { CheckCircle, XCircle, MessageSquare, Send, Clock } from 'lucide-react';
 
 const ACTION_ICON: Record<WorkflowAction, React.ReactNode> = {
-  [WorkflowAction.SUBMIT]: <Send className="h-4 w-4" />,
-  [WorkflowAction.APPROVE]: <CheckCircle className="h-4 w-4" />,
+  [WorkflowAction.SEND_TO_USER]: <Send className="h-4 w-4" />,
+  [WorkflowAction.SEND_TO_ADMIN]: <Send className="h-4 w-4" />,
   [WorkflowAction.REJECT]: <XCircle className="h-4 w-4" />,
   [WorkflowAction.REQUEST_MODIFICATION]: <MessageSquare className="h-4 w-4" />,
   [WorkflowAction.PUBLISH]: <CheckCircle className="h-4 w-4" />,
 };
 
 const ACTION_LABEL: Record<WorkflowAction, string> = {
-  [WorkflowAction.SUBMIT]: 'Soumis pour vérification',
-  [WorkflowAction.APPROVE]: 'Approuvé',
+  [WorkflowAction.SEND_TO_USER]: 'Soumis pour vérification',
+  [WorkflowAction.SEND_TO_ADMIN]: "Transmis à l'administrateur",
   [WorkflowAction.REJECT]: 'Rejeté',
   [WorkflowAction.REQUEST_MODIFICATION]: 'Modification demandée',
   [WorkflowAction.PUBLISH]: 'Publié',
 };
 
 const ACTION_COLOR: Record<WorkflowAction, string> = {
-  [WorkflowAction.SUBMIT]: 'text-indigo-600 bg-indigo-50',
-  [WorkflowAction.APPROVE]: 'text-green-600 bg-green-50',
+  [WorkflowAction.SEND_TO_USER]: 'text-indigo-600 bg-indigo-50',
+  [WorkflowAction.SEND_TO_ADMIN]: 'text-indigo-600 bg-indigo-50',
   [WorkflowAction.REJECT]: 'text-red-600 bg-red-50',
   [WorkflowAction.REQUEST_MODIFICATION]: 'text-amber-600 bg-amber-50',
   [WorkflowAction.PUBLISH]: 'text-emerald-600 bg-emerald-50',
@@ -31,9 +31,8 @@ const ACTION_COLOR: Record<WorkflowAction, string> = {
 
 const STEP_LABEL: Partial<Record<WorkflowStep, string>> = {
   [WorkflowStep.CREATION]: 'Création',
-  [WorkflowStep.VERIFICATION]: 'Vérification',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'Validation métier',
-  [WorkflowStep.REF_VALIDATION]: 'Validation référentiel',
+  [WorkflowStep.PENDING_REVIEW]: 'En révision',
+  [WorkflowStep.ADMIN_REVIEW]: 'Validation admin',
   [WorkflowStep.PUBLISHED]: 'Publication',
   [WorkflowStep.ARCHIVED]: 'Archive',
 };

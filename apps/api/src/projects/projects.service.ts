@@ -122,6 +122,12 @@ export class ProjectsService {
         ...(dto.name && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.chapter2Answers !== undefined && { chapter2Answers: dto.chapter2Answers as Prisma.InputJsonValue }),
+        ...(dto.types !== undefined && {
+          types: {
+            deleteMany: {},
+            create: dto.types.map((type) => ({ type })),
+          },
+        }),
       },
       include: { types: true },
     });
@@ -760,6 +766,19 @@ export class ProjectsService {
       message: dto.reason,
       metadata: { fromStep },
     });
+
+    // Si le rejet vient de l'admin, notifier aussi le vérificateur (s'il est distinct du créateur)
+    if (fromStep === WorkflowStep.ADMIN_REVIEW && project.verifiedById && project.verifiedById !== project.createdById) {
+      await this.notificationsService.create({
+        organizationId: orgId,
+        userId: project.verifiedById,
+        projectId: id,
+        type: notifType,
+        title: action === WorkflowAction.REJECT ? 'CPS rejeté par l\'admin' : 'Modification demandée par l\'admin',
+        message: dto.reason,
+        metadata: { fromStep },
+      });
+    }
 
     return this.prisma.project.findUnique({ where: { id }, include: { types: true } });
   }

@@ -33,7 +33,7 @@ export interface ProjectClause {
 
 export interface WorkflowHistoryItem {
   id: string;
-  action: string;
+  action: WorkflowAction;
   fromStep: WorkflowStep;
   toStep: WorkflowStep;
   comment?: string;
@@ -75,7 +75,7 @@ export async function createProject(payload: CreateProjectPayload): Promise<Proj
 
 export async function updateProject(
   projectId: string,
-  payload: { name?: string; description?: string; chapter2Answers?: Record<string, unknown> },
+  payload: { name?: string; description?: string; types?: ProjectType[]; chapter2Answers?: Record<string, unknown> },
 ): Promise<ProjectListItem> {
   return apiRequest<ProjectListItem>(`/projects/${projectId}`, {
     method: 'PATCH',

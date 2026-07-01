@@ -24,18 +24,16 @@ import { WorkflowStep, RoleName } from '@cps/shared';
 
 const STEP_LABEL: Record<WorkflowStep, string> = {
   [WorkflowStep.CREATION]: 'En création',
-  [WorkflowStep.VERIFICATION]: 'En vérification',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'Validation métier',
-  [WorkflowStep.REF_VALIDATION]: 'Validation référentiel',
+  [WorkflowStep.PENDING_REVIEW]: 'En vérification',
+  [WorkflowStep.ADMIN_REVIEW]: 'Validation admin',
   [WorkflowStep.PUBLISHED]: 'Publié',
   [WorkflowStep.ARCHIVED]: 'Archivé',
 };
 
 const STEP_BADGE: Record<WorkflowStep, BadgeVariant> = {
   [WorkflowStep.CREATION]: 'default',
-  [WorkflowStep.VERIFICATION]: 'warning',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'warning',
-  [WorkflowStep.REF_VALIDATION]: 'warning',
+  [WorkflowStep.PENDING_REVIEW]: 'warning',
+  [WorkflowStep.ADMIN_REVIEW]: 'warning',
   [WorkflowStep.PUBLISHED]: 'success',
   [WorkflowStep.ARCHIVED]: 'default',
 };
@@ -301,19 +299,9 @@ export default function DashboardPage() {
   // "Mes tâches" = projects requiring action from this user
   const myTasks = projects.filter((p) => {
     if (!user) return false;
-    if (
-      user.roles.includes(RoleName.USER) &&
-      p.workflowStep === WorkflowStep.VERIFICATION &&
-      p.verifiedById === user.sub
-    )
+    if (user.roles.includes(RoleName.USER) && p.workflowStep === WorkflowStep.PENDING_REVIEW)
       return true;
-    if (
-      user.roles.includes(RoleName.ADMIN) &&
-      p.workflowStep === WorkflowStep.BUSINESS_VALIDATION &&
-      p.validatedById === user.sub
-    )
-      return true;
-    if (user.roles.includes(RoleName.ADMIN) && p.workflowStep === WorkflowStep.REF_VALIDATION)
+    if (user.roles.includes(RoleName.ADMIN) && p.workflowStep === WorkflowStep.ADMIN_REVIEW)
       return true;
     return false;
   });

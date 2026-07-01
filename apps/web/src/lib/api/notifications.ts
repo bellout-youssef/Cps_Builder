@@ -3,10 +3,11 @@ import { apiRequest } from '../api-client';
 export interface NotificationItem {
   id: string;
   type: string;
+  title: string;
   isRead: boolean;
   createdAt: string;
   message: string | null;
-  entityId: string | null;
+  projectId: string | null;
 }
 
 export async function getNotifications(): Promise<NotificationItem[]> {
@@ -14,8 +15,8 @@ export async function getNotifications(): Promise<NotificationItem[]> {
 }
 
 export async function getUnreadCount(): Promise<number> {
-  const res = await apiRequest<{ count: number }>('/notifications/count');
-  return res.count;
+  const res = await apiRequest<{ unread: number }>('/notifications/count');
+  return res.unread;
 }
 
 export async function markAsRead(id: string): Promise<void> {

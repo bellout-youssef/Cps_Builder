@@ -25,18 +25,16 @@ import { Spinner } from '@/components/ui/spinner';
 
 const STEP_LABEL: Record<WorkflowStep, string> = {
   [WorkflowStep.CREATION]: 'En création',
-  [WorkflowStep.VERIFICATION]: 'En vérification',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'Validation métier',
-  [WorkflowStep.REF_VALIDATION]: 'Validation référentiel',
+  [WorkflowStep.PENDING_REVIEW]: 'En vérification',
+  [WorkflowStep.ADMIN_REVIEW]: 'Validation admin',
   [WorkflowStep.PUBLISHED]: 'Publié',
   [WorkflowStep.ARCHIVED]: 'Archivé',
 };
 
 const STEP_BADGE: Record<WorkflowStep, BadgeVariant> = {
   [WorkflowStep.CREATION]: 'default',
-  [WorkflowStep.VERIFICATION]: 'warning',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'warning',
-  [WorkflowStep.REF_VALIDATION]: 'warning',
+  [WorkflowStep.PENDING_REVIEW]: 'warning',
+  [WorkflowStep.ADMIN_REVIEW]: 'warning',
   [WorkflowStep.PUBLISHED]: 'success',
   [WorkflowStep.ARCHIVED]: 'default',
 };
@@ -100,13 +98,10 @@ export default function DashboardPage() {
 
   const tasks: ProjectListItem[] = [];
   if (can('projects:verify')) {
-    tasks.push(...projects.filter((p) => p.workflowStep === WorkflowStep.VERIFICATION));
+    tasks.push(...projects.filter((p) => p.workflowStep === WorkflowStep.PENDING_REVIEW));
   }
-  if (can('projects:validate')) {
-    tasks.push(...projects.filter((p) => p.workflowStep === WorkflowStep.BUSINESS_VALIDATION));
-  }
-  if (can('cps:publish')) {
-    tasks.push(...projects.filter((p) => p.workflowStep === WorkflowStep.REF_VALIDATION));
+  if (can('projects:validate') || can('cps:publish')) {
+    tasks.push(...projects.filter((p) => p.workflowStep === WorkflowStep.ADMIN_REVIEW));
   }
 
   const recentProjects = [...projects]

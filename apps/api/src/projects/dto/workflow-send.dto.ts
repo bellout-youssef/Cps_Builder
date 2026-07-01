@@ -1,9 +1,9 @@
-import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class WorkflowSendDto {
   /** Si présent : envoi vers ce user (PENDING_REVIEW). Absent : envoi vers l'admin (ADMIN_REVIEW). */
   @IsOptional()
-  @IsUUID()
+  @IsString()
   targetUserId?: string;
 
   @IsOptional()

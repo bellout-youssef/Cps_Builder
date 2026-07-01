@@ -36,7 +36,7 @@ function BibliothequeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
 
   const tabParam = (searchParams.get('tab') ?? 'mes-projets') as TabId;
   const viewParam = (searchParams.get('view') ?? 'liste') as ViewMode;
@@ -177,7 +177,7 @@ function BibliothequeContent() {
     if (projectsError)
       return <p className="py-10 text-center text-sm text-red-500">{projectsError}</p>;
     return viewMode === 'liste' ? (
-      <ProjectList projects={list} emptyMessage={empty} />
+      <ProjectList projects={list} emptyMessage={empty} currentUserId={user?.sub} />
     ) : (
       <ProjectTree projects={list} emptyMessage={empty} />
     );

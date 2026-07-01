@@ -32,7 +32,8 @@ export type Permission =
   | 'projects:validate'
   | 'projects:read'
   | 'referential:read'
-  | 'audit:read';
+  | 'audit:read'
+  | 'workflow:act';
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlyArray<Permission>>> = {
   [RoleName.SUPER_ADMIN]: ['org:manage', 'org:view', 'subscriptions:manage', 'support:access'],

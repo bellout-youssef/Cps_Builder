@@ -6,19 +6,17 @@ import { clsx } from 'clsx';
 
 const PIPELINE: Array<{ step: WorkflowStep; label: string; short: string }> = [
   { step: WorkflowStep.CREATION, label: 'Création', short: '1' },
-  { step: WorkflowStep.VERIFICATION, label: 'Vérification', short: '2' },
-  { step: WorkflowStep.BUSINESS_VALIDATION, label: 'Validation métier', short: '3' },
-  { step: WorkflowStep.REF_VALIDATION, label: 'Validation référentiel', short: '4' },
-  { step: WorkflowStep.PUBLISHED, label: 'Publié', short: '5' },
+  { step: WorkflowStep.PENDING_REVIEW, label: 'En révision', short: '2' },
+  { step: WorkflowStep.ADMIN_REVIEW, label: 'Validation admin', short: '3' },
+  { step: WorkflowStep.PUBLISHED, label: 'Publié', short: '4' },
 ];
 
 const STEP_ORDER: Partial<Record<WorkflowStep, number>> = {
   [WorkflowStep.CREATION]: 0,
-  [WorkflowStep.VERIFICATION]: 1,
-  [WorkflowStep.BUSINESS_VALIDATION]: 2,
-  [WorkflowStep.REF_VALIDATION]: 3,
-  [WorkflowStep.PUBLISHED]: 4,
-  [WorkflowStep.ARCHIVED]: 5,
+  [WorkflowStep.PENDING_REVIEW]: 1,
+  [WorkflowStep.ADMIN_REVIEW]: 2,
+  [WorkflowStep.PUBLISHED]: 3,
+  [WorkflowStep.ARCHIVED]: 4,
 };
 
 interface WorkflowStatusBarProps {

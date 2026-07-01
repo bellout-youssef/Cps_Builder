@@ -84,6 +84,8 @@ interface WizardState {
   questionnaire: CpsQuestionnaire;
   projectId: string | null;
   dceRef: string | null;
+  loadedCreatedById: string | null;
+  loadedCurrentHolderId: string | null;
 }
 
 const INITIAL_STATE: WizardState = {
@@ -96,6 +98,8 @@ const INITIAL_STATE: WizardState = {
   questionnaire: EMPTY_QUESTIONNAIRE,
   projectId: null,
   dceRef: null,
+  loadedCreatedById: null,
+  loadedCurrentHolderId: null,
 };
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -144,6 +148,8 @@ function NouveauProjetInner() {
         setState({
           projectId: project.id,
           dceRef: project.dceRef,
+          loadedCreatedById: project.createdById,
+          loadedCurrentHolderId: project.currentHolderId,
           step1: {
             name: project.name,
             description: project.description ?? '',
@@ -186,7 +192,7 @@ function NouveauProjetInner() {
     [],
   );
 
-  if (!user || !can('projects:create')) {
+  if (!user) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header title={editMode ? 'Modifier le projet' : 'Nouveau projet'} />
@@ -205,6 +211,22 @@ function NouveauProjetInner() {
         <Header title="Modifier le projet" />
         <main className="flex flex-1 items-center justify-center">
           <Spinner size="lg" />
+        </main>
+      </div>
+    );
+  }
+
+  const isRelatedToProject =
+    editMode &&
+    (state.loadedCreatedById === user.sub || state.loadedCurrentHolderId === user.sub);
+  if (!can('projects:create') && !isRelatedToProject) {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header title={editMode ? 'Modifier le projet' : 'Nouveau projet'} />
+        <main className="flex flex-1 items-center justify-center p-6">
+          <p className="text-sm text-slate-500">
+            Vous n&apos;avez pas l&apos;autorisation de modifier ce projet.
+          </p>
         </main>
       </div>
     );
@@ -235,6 +257,7 @@ function NouveauProjetInner() {
           await updateProject(state.projectId, {
             name: state.step1.name.trim(),
             description: state.step1.description.trim() || undefined,
+            types: state.step1.types as ProjectType[],
           });
           await saveQuestionnaireDraft(state.projectId, initialQ);
           setState((s) => ({ ...s, questionnaire: initialQ }));
@@ -305,6 +328,18 @@ function NouveauProjetInner() {
     setCurrentStep((s) => Math.max(s - 1, 0));
   }
 
+  function goToStep(index: number) {
+    if (editMode) {
+      // En mode édition : toutes les étapes sont accessibles librement
+      setSaveError(null);
+      setCurrentStep(index);
+    } else if (state.projectId && index <= currentStep) {
+      // En mode création : seulement les étapes déjà visitées (projet créé)
+      setSaveError(null);
+      setCurrentStep(index);
+    }
+  }
+
   async function handleFinish() {
     if (!state.projectId) return;
     setSaving(true);
@@ -329,7 +364,12 @@ function NouveauProjetInner() {
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Progress */}
-          <WizardProgress steps={STEPS} currentStep={currentStep} />
+          <WizardProgress
+            steps={STEPS}
+            currentStep={currentStep}
+            onStepClick={goToStep}
+            clickableUpTo={editMode ? STEPS.length - 1 : (state.projectId ? currentStep : -1)}
+          />
 
           {/* Step card */}
           <Card>

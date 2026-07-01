@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -35,14 +36,16 @@ function formatDate(iso: string) {
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
 
   async function load() {
     setLoading(true);
+    setLoadError(null);
     try {
       setItems(await getNotifications());
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setLoadError(err instanceof Error ? err.message : 'Impossible de charger les notifications.');
     } finally {
       setLoading(false);
     }
@@ -115,6 +118,13 @@ export default function NotificationsPage() {
           <div className="flex justify-center py-12">
             <Spinner />
           </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+              <Bell className="h-6 w-6 text-red-400" />
+            </div>
+            <p className="text-sm font-medium text-red-700">{loadError}</p>
+          </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
@@ -151,7 +161,17 @@ export default function NotificationsPage() {
                     </Badge>
                     <span className="text-xs text-slate-400">{formatDate(notif.createdAt)}</span>
                   </div>
-                  {notif.message && <p className="mt-1 text-sm text-slate-700">{notif.message}</p>}
+                  <p className="mt-1 text-sm font-medium text-slate-800">{notif.title}</p>
+                  {notif.message && <p className="mt-0.5 text-sm text-slate-600">{notif.message}</p>}
+                  {notif.projectId && (
+                    <Link
+                      href={`/dashboard/projects/${notif.projectId}`}
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Voir le projet
+                    </Link>
+                  )}
                 </div>
 
                 {/* Actions */}

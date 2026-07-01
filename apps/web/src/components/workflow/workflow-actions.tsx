@@ -107,6 +107,16 @@ export function WorkflowActions({ project, user, orgMembers, onTransition }: Wor
     return (
       <>
         <div className="flex flex-wrap items-center gap-3">
+          {isCurrentHolder && (
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => router.push(`/dashboard/nouveau-projet?edit=${project.id}`)}
+            >
+              <Edit3 className="h-4 w-4" />
+              Modifier le projet
+            </Button>
+          )}
           <Button variant="primary" size="md" onClick={() => setActiveSend(true)}>
             <UserCheck className="h-4 w-4" />
             Transmettre à…

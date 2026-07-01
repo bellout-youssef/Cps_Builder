@@ -16,18 +16,16 @@ const TYPE_LABEL: Record<ProjectType, string> = {
 
 const STEP_LABEL: Record<WorkflowStep, string> = {
   [WorkflowStep.CREATION]: 'En création',
-  [WorkflowStep.VERIFICATION]: 'En vérification',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'Validation métier',
-  [WorkflowStep.REF_VALIDATION]: 'Validation référentiel',
+  [WorkflowStep.PENDING_REVIEW]: 'En révision',
+  [WorkflowStep.ADMIN_REVIEW]: 'Validation admin',
   [WorkflowStep.PUBLISHED]: 'Publié',
   [WorkflowStep.ARCHIVED]: 'Archivé',
 };
 
 const STEP_BADGE: Record<WorkflowStep, BadgeVariant> = {
   [WorkflowStep.CREATION]: 'default',
-  [WorkflowStep.VERIFICATION]: 'warning',
-  [WorkflowStep.BUSINESS_VALIDATION]: 'warning',
-  [WorkflowStep.REF_VALIDATION]: 'warning',
+  [WorkflowStep.PENDING_REVIEW]: 'warning',
+  [WorkflowStep.ADMIN_REVIEW]: 'warning',
   [WorkflowStep.PUBLISHED]: 'success',
   [WorkflowStep.ARCHIVED]: 'default',
 };
