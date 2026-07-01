@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS — DRAFT_CMR2ILX8</title>
+<style>
+/* ─── Base ─────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  color: #000000;
+  line-height: 1.45;
+  background: #ffffff;
+}
+
+/* ─── Print / Page ──────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 2.54cm 2.54cm 3.5cm 2.54cm; }
+  h1, h2, h3 { page-break-after: avoid; }
+  .page-break { page-break-before: always; }
+  .no-break { page-break-inside: avoid; }
+}
+
+/* ─── Headings ──────────────────────────────────────────────────── */
+h1 {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  color: #0F4761;
+  margin: 18pt 0 4pt;
+  page-break-after: avoid;
+}
+h2 {
+  font-family: 'Calibri Light', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 16pt;
+  font-weight: 700;
+  color: #4472C4;
+  font-variant: small-caps;
+  border-bottom: 1pt solid #5B9BD5;
+  margin: 14pt 0 8pt;
+  padding-bottom: 4pt;
+  page-break-after: avoid;
+}
+h3 {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #000000;
+  margin: 12pt 0 3pt;
+  page-break-after: avoid;
+}
+h4 {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 8pt 0 2pt;
+}
+
+/* ─── Cover ─────────────────────────────────────────────────────── */
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 60pt 50pt;
+  page-break-after: always;
+}
+.cover-org {
+  align-self: flex-start;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 12pt;
+  font-variant: small-caps;
+  color: #0070C0;
+  font-weight: 700;
+}
+.cover-body {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16pt;
+}
+.cover-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-variant: small-caps;
+  color: #4472C4;
+  letter-spacing: 4pt;
+  text-transform: uppercase;
+}
+.cover-title {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #0F4761;
+  line-height: 1.3;
+}
+.cover-type-badge {
+  display: inline-block;
+  background: #0070C0;
+  color: white;
+  font-size: 9pt;
+  font-variant: small-caps;
+  padding: 3pt 8pt;
+  margin: 2pt;
+  border-radius: 2pt;
+}
+.cover-meta {
+  font-size: 10pt;
+  color: #555555;
+  line-height: 1.8;
+  text-align: center;
+}
+.cover-code {
+  align-self: stretch;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  text-align: right;
+  border-top: 1pt solid #0070C0;
+  border-bottom: 1pt solid #0070C0;
+  padding: 6pt 0;
+  letter-spacing: 1pt;
+}
+
+/* ─── TOC ───────────────────────────────────────────────────────── */
+.toc { margin: 20pt 0; }
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 5pt;
+}
+.toc-item-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.toc-item-label.lvl1 {
+  font-weight: 700;
+  color: #0070C0;
+  font-size: 9pt;
+}
+.toc-item-label.lvl2 {
+  font-size: 9pt;
+  margin-left: 20pt;
+}
+.toc-dots {
+  flex: 1;
+  border-bottom: 0.5pt dotted #888;
+  margin: 0 6pt;
+  min-width: 20pt;
+}
+.toc-page {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 9pt;
+  color: #0070C0;
+  white-space: nowrap;
+}
+
+/* ─── Clauses ───────────────────────────────────────────────────── */
+.clause { margin-bottom: 18pt; }
+.clause-header { display: flex; align-items: baseline; gap: 8pt; margin-bottom: 4pt; }
+.clause-number {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.clause-title { font-weight: 700; font-size: 11pt; }
+.clause-content { text-align: justify; line-height: 1.5; }
+.clause-modified {
+  border-left: 3pt solid #FFC000;
+  padding-left: 8pt;
+  background-color: #FFFBEE;
+}
+.clause-badge {
+  display: inline-block;
+  font-size: 8pt;
+  color: #B07000;
+  font-style: italic;
+  margin-bottom: 4pt;
+}
+.sub-clause { margin: 8pt 0 0 24pt; }
+.sub-clause-title { font-weight: 700; font-size: 10pt; margin-bottom: 2pt; }
+
+/* ─── Chapitre II Questionnaire ─────────────────────────────────── */
+.q-item { margin-bottom: 14pt; }
+.q-question { font-weight: 700; margin-bottom: 4pt; }
+.q-answer {
+  padding: 6pt 8pt;
+  border: 0.5pt solid #CCCCCC;
+  background: #F8F8F8;
+  text-align: justify;
+}
+
+/* ─── Chapitre IV Définition des prix ───────────────────────────── */
+.prix-item {
+  border: 0.5pt solid #DDDDDD;
+  margin-bottom: 12pt;
+  page-break-inside: avoid;
+}
+.prix-header {
+  background-color: #0F4761;
+  color: white;
+  font-weight: 700;
+  padding: 5pt 8pt;
+  font-size: 10pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.prix-code { font-variant: small-caps; letter-spacing: 1pt; }
+.prix-unit { font-size: 9pt; font-style: italic; }
+.prix-desc { padding: 8pt; font-size: 10.5pt; line-height: 1.5; text-align: justify; }
+
+/* ─── Tables TMPA (BDP / ESTIM) ─────────────────────────────────── */
+.table-tmpa {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9pt;
+  margin-bottom: 24pt;
+}
+.table-tmpa th {
+  background-color: #0070C0;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 5pt 4pt;
+  border: 0.5pt solid #004E90;
+  text-align: center;
+  font-variant: small-caps;
+}
+.table-tmpa td {
+  border: 0.5pt solid #CCCCCC;
+  padding: 3pt 4pt;
+  vertical-align: top;
+}
+.table-tmpa .td-num {
+  text-align: right;
+  white-space: nowrap;
+}
+.table-tmpa .td-center { text-align: center; }
+.table-tmpa .row-lot td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+  font-size: 9.5pt;
+}
+.table-tmpa .row-section td {
+  background-color: #DEEAF1;
+  color: #0F4761;
+  font-weight: 700;
+  font-style: italic;
+}
+.table-tmpa .row-sub-section td {
+  background-color: #EBF3FB;
+  color: #4472C4;
+  font-weight: 700;
+}
+.table-tmpa .row-total td {
+  background-color: #4472C4;
+  color: #ffffff;
+  font-weight: 700;
+}
+.table-tmpa .row-grand-total td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+}
+
+/* ─── RECAP (Estimation) ────────────────────────────────────────── */
+.recap-title {
+  font-family: Calibri, sans-serif;
+  font-variant: small-caps;
+  font-weight: 700;
+  color: #0F4761;
+  font-size: 12pt;
+  margin-bottom: 8pt;
+}
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="cover-org">Organisation TMPA Démo</div>
+  <div class="cover-body">
+    <div class="cover-label">Cahier des Prescriptions Spéciales</div>
+    <div class="cover-title">&amp;&quot;'r</div>
+    <div style="color:#555;font-size:10pt;text-align:center;max-width:80%">zeaazeé&amp;'</div>
+    <div><span class="cover-type-badge">B</span> <span class="cover-type-badge">E</span></div>
+    <div class="cover-meta">
+      Créé par : <strong>Créateur CPS</strong><br>
+      Publié le : <strong>01 juillet 2026</strong>
+    </div>
+  </div>
+  <div class="cover-code">DRAFT_CMR2ILX8</div>
+</section>
+<section class="page-break">
+<h1>Sommaire</h1>
+<div class="toc"><div class="toc-item">
+    <span class="toc-item-label lvl1">Préambule</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre I — Clauses Communes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre II — Questionnaire</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre III — Clauses Techniques</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre IV — Définition des Prix</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre V — Bordereau des Prix et Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Bordereau des Prix Détail</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Annexes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div></div>
+</section>
+<section class="page-break">
+<h1>Préambule</h1>
+<div><p>Le présent CPS définit les conditions dans lesquelles seront exécutés les travaux.</p></div>
+</section>
+<section class="page-break">
+<h1>Chapitre I — Clauses Communes</h1>
+
+</section>
+<section class="page-break">
+<h1>Chapitre II — Clauses Administratives et Financières Spécifiques</h1>
+<h2>Article 2.1 — OBJET DU MARCHÉ</h2>
+<p>Le présent marché a pour objet : <strong>&amp;é</strong></p>
+<h2>Article 2.2 — INTERVENANTS</h2>
+<p>Les intervenants du présent marché sont :</p>
+<p><strong>Le Maître d'ouvrage : </strong>Tanger Med Port Authority (TMPA)</p>
+<p><strong>Le Maître d'œuvre (Architecte, BET) : </strong>[À compléter]</p>
+<p><strong>Bureau de Contrôle : </strong>[À compléter]</p>
+<p><strong>Cabinet topographique : </strong>[À compléter]</p>
+<h2>Article 2.3 — CONSISTANCE DES TRAVAUX</h2>
+<p>Les travaux à exécuter consistent en ce qui suit :</p>
+<ul><li>[À compléter]</li></ul>
+<h2>Article 2.4 — RÉFÉRENCE AUX TEXTES SPÉCIAUX APPLICABLES AU MARCHÉ</h2>
+<p>Le titulaire est également soumis aux textes suivants :</p>
+<ul><li>Devis général d'architecture (1956)</li><li>Règles BAEL / CCBA 68</li></ul>
+<p>En cas de contradiction, les prescriptions des documents les plus récents primeront.</p>
+<h2>Article 2.5 — CAUTIONNEMENT DÉFINITIF</h2>
+<p>Le montant du cautionnement définitif est fixé à (3%) du montant initial du marché.</p>
+<p>Si non réalisé dans 30 jours → pénalité de 1% du montant initial.</p>
+<p>En cas de non-production, le montant total du cautionnement définitif sera retenu sur les sommes dues à partir du premier décompte.</p>
+<h2>Article 2.6 — DURÉE, DÉLAI D'EXÉCUTION OU DATE D'ACHÈVEMENT</h2>
+<p style="font-style:italic">[Type de délai à définir : ferme, partiel ou à tranches]</p>
+<h2>Article 2.7 — DÉLAI DE GARANTIE</h2>
+<p>Le délai de garantie est fixé à <strong>XXX</strong> à compter de la date de la réception provisoire.</p>
+<p>Pendant ce délai, l'entrepreneur remettra les plans conformes à l'exécution et remédiera à toutes les défectuosités constatées.</p>
+<h2>Article 2.8 — PÉNALITÉS POUR RETARD</h2>
+<ul><li>Ces pénalités seront appliquées de plein droit sans mise en demeure.</li><li>Les journées de repos hebdomadaire et jours fériés ne sont pas déduites.</li><li>Lorsque le plafond est atteint, le MO est en droit de résilier le marché.</li><li>L'ensemble des pénalités est plafonné à (10%) du montant initial du marché.</li></ul>
+<h2>Article 2.9 — RÉVISION DES PRIX</h2>
+<p>Les prix du marché sont fermes et non révisables.</p>
+<h2>Article 2.10 — SOUS-TRAITANCE</h2>
+<p>Accord préalable écrit du MO requis. La sous-traitance ne peut dépasser (50%) du montant du marché ni porter sur le lot principal.</p>
+<p>Le titulaire demeure personnellement responsable de toutes les obligations résultant du marché.</p>
+<h2>Article 2.11 — APPROVISIONNEMENTS</h2>
+<p>Le présent marché ne prévoit pas d'acomptes sur approvisionnements.</p>
+<h2>Article 2.12 — CAS DE FORCE MAJEURE</h2>
+<p>Événement imprévisible, irrésistible, hors du contrôle des parties rendant l'exécution pratiquement impossible. Seuils intempéries :</p>
+<table class="table-tmpa"><thead><tr><th>Événement</th><th>Travaux Maritimes</th><th>Aménagement</th><th>Bâtiment</th></tr></thead><tbody><tr><td>Pluie</td><td>15 mm/j</td><td>5 mm/j</td><td>10 mm/j</td></tr><tr><td>Vent</td><td>&gt;60 km/h</td><td>&gt;60 km/h</td><td>&gt;60 km/h</td></tr><tr><td>Houle</td><td>6 m</td><td>NA</td><td>NA</td></tr><tr><td>Séisme</td><td>4° Richter</td><td>4° Richter</td><td>4° Richter</td></tr></tbody></table>
+<p>Après 60 jours de force majeure, le marché peut être résilié.</p>
+<h2>Article 2.13 — CONDITIONS ET EXÉCUTION DE LA VARIANTE</h2>
+<p>Dispositions Non Applicables.</p>
+<h2>Article 2.14 — RÉCEPTIONS</h2>
+<p style="font-style:italic">[Type de délai à définir]</p>
+</section>
+<section class="page-break">
+<h1>Chapitre III — Clauses Techniques</h1>
+
+</section>
+
+<section class="page-break">
+<h1>Chapitre V — Bordereau des Prix et Estimation</h1>
+<h2>A — Bordereau des Prix Détail</h2>
+<p><em>Aucun prix défini.</em></p>
+<h2>B — Estimation</h2>
+<p><em>Aucune estimation disponible.</em></p>
+</section>
+</body>
+</html>

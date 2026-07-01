@@ -17,6 +17,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env['FRONTEND_URL'] ?? 'http://localhost:3000',
     credentials: true,
+    exposedHeaders: ['Content-Disposition', 'Content-Type'],
   });
 
   const port = process.env['PORT'] ?? 3001;

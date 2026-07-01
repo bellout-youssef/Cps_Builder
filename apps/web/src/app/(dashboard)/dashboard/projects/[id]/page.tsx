@@ -9,6 +9,8 @@ import {
   History,
   ClipboardList,
   Eye,
+  Download,
+  RefreshCw,
 } from 'lucide-react';
 import { WorkflowStep, WorkflowAction } from '@cps/shared';
 import { useAuth } from '@/contexts/auth-context';
@@ -21,6 +23,12 @@ import {
   type ProjectDetail,
 } from '@/lib/api/projects';
 import { getOrgMembers, type OrgMember } from '@/lib/api/admin';
+import {
+  generatePreview,
+  listDocuments,
+  downloadDocument,
+  type ProjectDocument,
+} from '@/lib/api/documents';
 import { Header } from '@/components/layout/header';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/card';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
@@ -71,6 +79,10 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('apercu');
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [downloadingType, setDownloadingType] = useState<string | null>(null);
 
   const loadProject = useCallback(() => {
     if (!params?.id) return;
@@ -84,9 +96,18 @@ export default function ProjectPage() {
       .finally(() => setLoading(false));
   }, [params?.id]);
 
+  const loadDocuments = useCallback(() => {
+    if (!params?.id) return;
+    listDocuments(params.id).then(setDocuments).catch(() => {});
+  }, [params?.id]);
+
   useEffect(() => {
     loadProject();
   }, [loadProject]);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
 
   useEffect(() => {
     if (can('projects:read')) {
@@ -95,6 +116,32 @@ export default function ProjectPage() {
         .catch(() => {});
     }
   }, [can]);
+
+  async function handleGeneratePreview() {
+    if (!project) return;
+    setGenerating(true);
+    setGenError(null);
+    try {
+      await generatePreview(project.id);
+      await loadDocuments();
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Erreur de génération');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleDownload(type: string) {
+    if (!project) return;
+    setDownloadingType(type);
+    try {
+      await downloadDocument(project.id, type);
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Erreur de téléchargement');
+    } finally {
+      setDownloadingType(null);
+    }
+  }
 
   async function handleTransition(
     action: WorkflowAction,
@@ -224,6 +271,70 @@ export default function ProjectPage() {
                   </CardBody>
                 </Card>
               )}
+
+              {/* Documents CPS */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-indigo-500" />
+                      <CardTitle>Documents CPS</CardTitle>
+                    </div>
+                    {project.workflowStep !== WorkflowStep.PUBLISHED && (
+                      <button
+                        type="button"
+                        onClick={handleGeneratePreview}
+                        disabled={generating}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                      >
+                        {generating ? (
+                          <>
+                            <Spinner size="sm" />
+                            Génération…
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Générer le CPS
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  {genError && (
+                    <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{genError}</p>
+                  )}
+                  {documents.length === 0 ? (
+                    <p className="py-4 text-center text-sm italic text-slate-400">
+                      {project.workflowStep === WorkflowStep.PUBLISHED
+                        ? 'Documents en cours de génération…'
+                        : 'Aucun document généré — cliquez sur « Générer le CPS » pour créer un aperçu.'}
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {documents.map((doc) => {
+                        const typeKey = doc.type === 'BDP_EXCEL' ? 'bdp' : doc.type === 'ESTIM_EXCEL' ? 'estim' : doc.type.toLowerCase();
+                        const label = { html: 'HTML', docx: 'DOCX', pdf: 'PDF', bdp: 'BDP Excel', estim: 'Estimation Excel' }[typeKey] ?? doc.type;
+                        const isDownloading = downloadingType === typeKey;
+                        return (
+                          <button
+                            key={doc.id}
+                            type="button"
+                            onClick={() => handleDownload(typeKey)}
+                            disabled={isDownloading}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                          >
+                            {isDownloading ? <Spinner size="sm" /> : <Download className="h-3.5 w-3.5 text-slate-400" />}
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
 
               {/* Tabs */}
               <div>

@@ -5,6 +5,8 @@ import {
   CpsEstimLot,
   CpsBdpLot,
   CpsRecapRow,
+  BlockItem,
+  CpsChapterContent,
 } from './types/cps-document.types';
 
 const TMPA_CSS = `
@@ -299,7 +301,7 @@ export class HtmlGeneratorService {
       this.renderToc(),
       this.renderPreamble(data.preamble),
       this.renderChapter1(data.chapter1),
-      this.renderChapter2(data.chapter2),
+      this.renderChapter2(data.chapter2, data.chapter2Content),
       this.renderChapter3(data.chapter3),
       this.renderChapter4(data.chapter4),
       this.renderChapter5(data),
@@ -392,7 +394,13 @@ ${clauses.map((c) => this.renderClause(c)).join('\n')}
 </section>`;
   }
 
-  private renderChapter2(answers: Array<{ question: string; answer: string }>): string {
+  private renderChapter2(answers: Array<{ question: string; answer: string }>, content?: CpsChapterContent): string {
+    if (content) {
+      return this.renderChapterContent(
+        'Chapitre II — Clauses Administratives et Financières Spécifiques',
+        content,
+      );
+    }
     if (!answers.length) return '';
     const rows = answers
       .map(
@@ -408,6 +416,53 @@ ${clauses.map((c) => this.renderClause(c)).join('\n')}
 <h1>Chapitre II — Questionnaire</h1>
 ${rows}
 </section>`;
+  }
+
+  /** Render a CpsChapterContent (neutral blocks) as HTML. */
+  private renderChapterContent(chapterTitle: string, content: CpsChapterContent): string {
+    const articles = content.articles
+      .map((art) => {
+        const heading = art.num
+          ? `<h2>Article ${this.esc(art.num)} — ${this.esc(art.title)}</h2>`
+          : `<h2>${this.esc(art.title)}</h2>`;
+        const blocks = art.blocks.map((b) => this.renderBlock(b)).join('\n');
+        return `${heading}\n${blocks}`;
+      })
+      .join('\n');
+
+    return `<section class="page-break">
+<h1>${this.esc(chapterTitle)}</h1>
+${articles}
+</section>`;
+  }
+
+  private renderBlock(b: BlockItem): string {
+    switch (b.kind) {
+      case 'para': {
+        const styles: string[] = [];
+        if (b.italic) styles.push('font-style:italic');
+        if (b.center) styles.push('text-align:center');
+        const styleAttr = styles.length ? ` style="${styles.join(';')}"` : '';
+        const inner = b.bold ? `<strong>${this.esc(b.text)}</strong>` : this.esc(b.text);
+        return `<p${styleAttr}>${inner}</p>`;
+      }
+      case 'para_mixed': {
+        const runs = b.runs
+          .map((r) => (r.bold ? `<strong>${this.esc(r.text)}</strong>` : this.esc(r.text)))
+          .join('');
+        const align = b.center ? ' style="text-align:center"' : '';
+        return `<p${align}>${runs}</p>`;
+      }
+      case 'formula':
+        return `<p style="font-family:monospace;font-size:12pt;font-weight:bold;text-align:center;margin:12pt 0">${this.esc(b.text)}</p>`;
+      case 'bullets':
+        return `<ul>${b.items.map((i) => `<li>${this.esc(i)}</li>`).join('')}</ul>`;
+      case 'table': {
+        const thead = `<tr>${b.headers.map((h) => `<th>${this.esc(h)}</th>`).join('')}</tr>`;
+        const tbody = b.rows.map((row) => `<tr>${row.map((c) => `<td>${this.esc(c)}</td>`).join('')}</tr>`).join('');
+        return `<table class="table-tmpa"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+      }
+    }
   }
 
   private renderChapter3(clauses: CpsClause[]): string {

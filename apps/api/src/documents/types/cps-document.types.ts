@@ -90,6 +90,25 @@ export interface CpsAnnex {
   content: string;
 }
 
+// ─── Neutral block types for Chapter II conditional content ──────────────────
+
+export type BlockItem =
+  | { kind: 'para'; text: string; bold?: boolean; italic?: boolean; center?: boolean }
+  | { kind: 'para_mixed'; runs: Array<{ text: string; bold?: boolean; italic?: boolean }>; center?: boolean }
+  | { kind: 'formula'; text: string }
+  | { kind: 'bullets'; items: string[] }
+  | { kind: 'table'; headers: string[]; rows: string[][] };
+
+export interface CpsArticleSection {
+  num: string;   // e.g. "2.1" — empty string for unnumbered sections
+  title: string;
+  blocks: BlockItem[];
+}
+
+export interface CpsChapterContent {
+  articles: CpsArticleSection[];
+}
+
 export interface CpsDocumentData {
   code: string;
   projectName: string;
@@ -102,6 +121,7 @@ export interface CpsDocumentData {
   preamble?: string;
   chapter1: CpsClause[];
   chapter2: CpsChapter2Answer[];
+  chapter2Content?: CpsChapterContent;  // built from questionnaire — takes precedence when present
   chapter3: CpsClause[];
   chapter4: CpsPriceDefinition[];
 

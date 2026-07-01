@@ -8,6 +8,7 @@ import { HtmlGeneratorService } from './html-generator.service';
 import { DocxGeneratorService } from './docx-generator.service';
 import { PdfGeneratorService } from './pdf-generator.service';
 import { ExcelGeneratorService } from './excel-generator.service';
+import { CpsContentBuilderService, CpsQuestionnaireInput } from './cps-content-builder.service';
 import {
   CpsDocumentData,
   CpsBdpLot,
@@ -30,6 +31,7 @@ export class PublicationService {
     private readonly docx: DocxGeneratorService,
     private readonly pdf: PdfGeneratorService,
     private readonly excel: ExcelGeneratorService,
+    private readonly contentBuilder: CpsContentBuilderService,
   ) {
     this.uploadsRoot = config.get<string>('UPLOADS_DIR', 'uploads');
   }
@@ -120,6 +122,122 @@ export class PublicationService {
     this.logger.log(`Documents générés et stockés pour ${project.code}`);
   }
 
+  /**
+   * Génération préliminaire (brouillon) — sans verrou, sans code définitif.
+   * Génère uniquement HTML + DOCX. Le PDF et les Excel ne sont générés qu'à la publication.
+   */
+  async generatePreview(projectId: string, orgId: string): Promise<void> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId: orgId },
+      include: {
+        organization: true,
+        createdBy: { select: { id: true, name: true } },
+        types: true,
+        clauses: {
+          include: {
+            clause: { select: { number: true, title: true, content: true, articleId: true } },
+          },
+          orderBy: { number: 'asc' },
+        },
+        articles: {
+          include: {
+            article: {
+              select: { id: true, code: true, title: true, unit: true, description: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) throw new NotFoundException('Projet non trouvé');
+
+    const previewCode = project.code ?? `DRAFT_${projectId.slice(0, 8).toUpperCase()}`;
+    const data = this.mapToDocumentData({
+      ...project,
+      code: previewCode,
+      publishedAt: project.publishedAt ?? new Date(),
+    });
+
+    this.logger.log(`Génération aperçu pour projet ${projectId}…`);
+
+    const [htmlContent, docxBuffer] = await Promise.all([
+      Promise.resolve(this.html.generate(data)),
+      this.docx.generate(data),
+    ]);
+
+    const dir = path.join(this.uploadsRoot, 'docs', orgId, projectId);
+    await fs.mkdir(dir, { recursive: true });
+
+    await Promise.all([
+      fs.writeFile(path.join(dir, `${previewCode}.html`), htmlContent),
+      fs.writeFile(path.join(dir, `${previewCode}.docx`), docxBuffer),
+    ]);
+
+    await this.prisma.$transaction([
+      this.prisma.projectDocument.deleteMany({
+        where: { projectId, type: { in: [DocumentType.HTML, DocumentType.DOCX] } },
+      }),
+      this.prisma.projectDocument.createMany({
+        data: [
+          {
+            projectId,
+            type: DocumentType.HTML,
+            filename: `${previewCode}.html`,
+            path: path.join('docs', orgId, projectId, `${previewCode}.html`),
+            sizeBytes: Buffer.from(htmlContent).length,
+          },
+          {
+            projectId,
+            type: DocumentType.DOCX,
+            filename: `${previewCode}.docx`,
+            path: path.join('docs', orgId, projectId, `${previewCode}.docx`),
+            sizeBytes: docxBuffer.length,
+          },
+        ],
+      }),
+    ]);
+
+    this.logger.log(`Aperçu généré pour projet ${projectId}`);
+  }
+
+  /** Liste les documents générés pour un projet (accessible à l'org). */
+  async listDocuments(projectId: string, orgId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId: orgId },
+      select: { id: true },
+    });
+    if (!project) throw new NotFoundException('Projet non trouvé');
+    return this.prisma.projectDocument.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  /** Retourne le chemin absolu d'un document pour le téléchargement. */
+  async getDocumentPath(projectId: string, type: string, orgId: string): Promise<{ fullPath: string; filename: string }> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId: orgId },
+      select: { id: true },
+    });
+    if (!project) throw new NotFoundException('Projet non trouvé');
+
+    const typeMap: Record<string, DocumentType> = {
+      html: DocumentType.HTML,
+      docx: DocumentType.DOCX,
+      pdf: DocumentType.PDF,
+      bdp: DocumentType.BDP_EXCEL,
+      estim: DocumentType.ESTIM_EXCEL,
+    };
+    const docType = typeMap[type.toLowerCase()];
+    if (!docType) throw new NotFoundException('Type de document non reconnu');
+
+    const doc = await this.prisma.projectDocument.findFirst({ where: { projectId, type: docType } });
+    if (!doc) throw new NotFoundException('Document non trouvé — générez le CPS d\'abord');
+
+    const fullPath = path.resolve(this.uploadsRoot, doc.path);
+    const uploadsAbs = path.resolve(this.uploadsRoot);
+    if (!fullPath.startsWith(uploadsAbs)) throw new NotFoundException('Accès refusé');
+
+    return { fullPath, filename: doc.filename };
+  }
+
   // ─── Mapping Prisma → CpsDocumentData ────────────────────────────
 
   private mapToDocumentData(project: {
@@ -144,20 +262,50 @@ export class PublicationService {
       article: { id: string; code: string | null; title: string; unit: string | null; description: string | null };
     }>;
   }): CpsDocumentData {
-    const { chapter1, chapter3 } = this.splitClauses(project.clauses);
+    const { chapter1, chapter3: chapter3FromDB } = this.splitClauses(project.clauses);
 
-    const ch2 = Array.isArray(project.chapter2Answers)
-      ? (project.chapter2Answers as Array<{ question: string; answer: string }>)
-      : [];
+    // chapter2Answers est stocké comme un objet CpsQuestionnaire (JSONB) — pas un tableau
+    const questionnaire = (project.chapter2Answers && typeof project.chapter2Answers === 'object' && !Array.isArray(project.chapter2Answers)
+      ? (project.chapter2Answers as CpsQuestionnaireInput)
+      : {}) as CpsQuestionnaireInput;
 
-    const chapter4 = project.articles
-      .filter((pa) => pa.article.code)
-      .map((pa) => ({
-        code: pa.article.code!,
-        title: pa.article.title,
-        unit: pa.article.unit ?? '—',
-        description: pa.article.description ?? '',
-      }));
+    // Construit le Chapitre II conditionnel depuis les 38 champs du questionnaire
+    const chapter2Content = this.contentBuilder.buildChapterII(questionnaire);
+
+    // Enrichit chapter3 avec les prescriptions techniques du questionnaire (si renseignées)
+    const chapter3 = [...chapter3FromDB];
+    const techLines = this.splitQLines(questionnaire.tech_prescriptions);
+    const docLines = this.splitQLines(questionnaire.tech_docs);
+    if (techLines.length) {
+      chapter3.push({
+        id: 'tech-prescriptions',
+        number: 'III.A',
+        title: 'Prescriptions techniques particulières',
+        content: techLines.join('<br>'),
+        isModifiedLocally: false,
+      });
+    }
+    if (docLines.length) {
+      chapter3.push({
+        id: 'tech-docs',
+        number: 'III.B',
+        title: 'Documents techniques à fournir',
+        content: docLines.join('<br>'),
+        isModifiedLocally: false,
+      });
+    }
+
+    // chapter4 depuis les articles DB ou, si vide, depuis cdp_lignes du questionnaire
+    const chapter4 = project.articles.filter((pa) => pa.article.code).length
+      ? project.articles.filter((pa) => pa.article.code).map((pa) => ({
+          code: pa.article.code!,
+          title: pa.article.title,
+          unit: pa.article.unit ?? '—',
+          description: pa.article.description ?? '',
+        }))
+      : (questionnaire.cdp_lignes ?? [])
+          .filter((l) => l.designation)
+          .map((l) => ({ code: l.numero || '—', title: l.designation, unit: l.unite || '—', description: '' }));
 
     const { bdpLots, estimLots } = this.buildLots(project.articles);
 
@@ -171,7 +319,8 @@ export class PublicationService {
       types: project.types.map((t) => t.type),
       preamble: undefined,
       chapter1,
-      chapter2: ch2,
+      chapter2: [],        // remplacé par chapter2Content
+      chapter2Content,
       chapter3,
       chapter4,
       bdpLots,
@@ -183,6 +332,11 @@ export class PublicationService {
       })),
       annexes: [],
     };
+  }
+
+  private splitQLines(v: string | null | undefined): string[] {
+    if (!v || v === '—') return [];
+    return v.split('\n').map((l) => l.trim().replace(/^[-–•]\s*/, '')).filter(Boolean);
   }
 
   private splitClauses(

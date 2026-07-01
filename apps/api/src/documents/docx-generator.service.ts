@@ -5,6 +5,7 @@ import {
   Document,
   Footer,
   HeadingLevel,
+  LevelFormat,
   PageNumber,
   PageOrientation,
   Packer,
@@ -23,6 +24,8 @@ import {
   CpsClause,
   CpsBdpLot,
   CpsEstimLot,
+  BlockItem,
+  CpsChapterContent,
 } from './types/cps-document.types';
 
 // ─── Couleurs TMPA ────────────────────────────────────────────────
@@ -46,6 +49,26 @@ export class DocxGeneratorService {
     const footerParagraph = this.buildFooterParagraph(data.code);
 
     const doc = new Document({
+      numbering: {
+        config: [
+          {
+            reference: 'cps-bullets',
+            levels: [
+              {
+                level: 0,
+                format: LevelFormat.BULLET,
+                text: '–',
+                alignment: AlignmentType.LEFT,
+                style: {
+                  paragraph: {
+                    indent: { left: convertMillimetersToTwip(7), hanging: convertMillimetersToTwip(4) },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
       styles: {
         default: {
           document: {
@@ -78,7 +101,7 @@ export class DocxGeneratorService {
             ...this.buildToc(),
             ...this.buildPreamble(data.preamble),
             ...this.buildChapter1(data.chapter1),
-            ...this.buildChapter2(data.chapter2),
+            ...this.buildChapter2(data.chapter2, data.chapter2Content),
             ...this.buildChapter3(data.chapter3),
             ...this.buildChapter4(data.chapter4),
             ...this.buildChapter5(data),
@@ -231,7 +254,13 @@ export class DocxGeneratorService {
     return [this.h1('Chapitre I — Clauses Communes'), ...clauses.flatMap((c) => this.buildClause(c)), this.pageBreak()];
   }
 
-  private buildChapter2(answers: Array<{ question: string; answer: string }>): (Paragraph | Table)[] {
+  private buildChapter2(answers: Array<{ question: string; answer: string }>, content?: CpsChapterContent): (Paragraph | Table)[] {
+    if (content) {
+      return this.buildChapterContent(
+        'Chapitre II — Clauses Administratives et Financières Spécifiques',
+        content,
+      );
+    }
     if (!answers.length) return [];
     const rows = answers.flatMap((a) => [
       new Paragraph({ children: [new TextRun({ text: a.question, bold: true, size: 22 })] }),
@@ -243,6 +272,92 @@ export class DocxGeneratorService {
     ]);
 
     return [this.h1('Chapitre II — Questionnaire'), ...rows, this.pageBreak()];
+  }
+
+  /** Render a CpsChapterContent to DOCX paragraphs/tables. */
+  private buildChapterContent(chapterTitle: string, content: CpsChapterContent): (Paragraph | Table)[] {
+    const result: (Paragraph | Table)[] = [this.h1(chapterTitle)];
+    for (const art of content.articles) {
+      const heading = art.num ? `Article ${art.num} — ${art.title}` : art.title;
+      result.push(this.h2(heading));
+      for (const block of art.blocks) {
+        result.push(...this.renderBlock(block));
+      }
+    }
+    result.push(this.pageBreak());
+    return result;
+  }
+
+  private renderBlock(b: BlockItem): (Paragraph | Table)[] {
+    switch (b.kind) {
+      case 'para':
+        return [
+          new Paragraph({
+            alignment: b.center ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+            children: [new TextRun({ text: b.text, size: 22, bold: b.bold, italics: b.italic })],
+          }),
+        ];
+      case 'para_mixed':
+        return [
+          new Paragraph({
+            alignment: b.center ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+            children: b.runs.map((r) => new TextRun({ text: r.text, size: 22, bold: r.bold, italics: r.italic })),
+          }),
+        ];
+      case 'formula':
+        return [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 160, after: 160 },
+            children: [new TextRun({ text: b.text, font: 'Courier New', size: 22, bold: true })],
+          }),
+        ];
+      case 'bullets':
+        return b.items.map(
+          (item) =>
+            new Paragraph({
+              numbering: { reference: 'cps-bullets', level: 0 },
+              alignment: AlignmentType.JUSTIFIED,
+              children: [new TextRun({ text: item, size: 22 })],
+            }),
+        );
+      case 'table': {
+        if (!b.rows.length) return [];
+        const colCount = Math.max(b.headers.length, ...b.rows.map((r) => r.length));
+        const colW = Math.floor(convertMillimetersToTwip(170) / colCount);
+        const mkCell = (text: string, isHeader: boolean) =>
+          new TableCell({
+            shading: isHeader ? { type: ShadingType.SOLID, color: C.marine } : undefined,
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text,
+                    size: 18,
+                    bold: isHeader,
+                    color: isHeader ? C.white : C.black,
+                  }),
+                ],
+              }),
+            ],
+          });
+        const rows: TableRow[] = [];
+        if (b.headers.length) {
+          rows.push(new TableRow({ tableHeader: true, children: b.headers.map((h) => mkCell(h, true)) }));
+        }
+        b.rows.forEach((row) => {
+          const cells = Array.from({ length: colCount }, (_, i) => mkCell(row[i] ?? '', false));
+          rows.push(new TableRow({ children: cells }));
+        });
+        return [
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows,
+          }),
+        ];
+      }
+    }
   }
 
   private buildChapter3(clauses: CpsClause[]): (Paragraph | Table)[] {
