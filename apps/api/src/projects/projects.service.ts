@@ -76,16 +76,12 @@ export class ProjectsService {
       });
     }
 
-    // USER : ses propres projets + projets dont il est porteur + projets partagés
+    // USER : créateur | porteur actuel | partagé | historique workflow | projet publié
     return this.prisma.project.findMany({
       where: {
         organizationId: orgId,
         archivedAt: null,
-        OR: [
-          { createdById: userId },
-          { currentHolderId: userId },
-          { shares: { some: { userId } } },
-        ],
+        OR: this.buildUserVisibilityOrConditions(userId),
       },
       include: { types: true, createdBy: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: 'desc' },
@@ -93,8 +89,15 @@ export class ProjectsService {
   }
 
   async findOne(id: string, userId: string, orgId: string) {
+    const roles = await this.getUserRoles(userId, orgId);
+    const isAdmin = roles.includes(RoleName.ADMIN);
+
+    const where: Prisma.ProjectWhereInput = isAdmin
+      ? { id, organizationId: orgId }
+      : { id, organizationId: orgId, archivedAt: null, OR: this.buildUserVisibilityOrConditions(userId) };
+
     const project = await this.prisma.project.findFirst({
-      where: { id, organizationId: orgId },
+      where,
       include: {
         types: true,
         shares: { include: { user: { select: { id: true, name: true, email: true } } } },
@@ -106,8 +109,7 @@ export class ProjectsService {
       },
     });
 
-    if (!project) throw new NotFoundException('Projet non trouvé');
-    await this.assertCanRead(project as any, userId, orgId);
+    if (!project) throw new NotFoundException('Projet non trouvé ou accès non autorisé');
     return project;
   }
 
@@ -187,8 +189,8 @@ export class ProjectsService {
   // ─── Gestion des clauses locales ──────────────────────────────────────────
 
   async getProjectClauses(id: string, userId: string, orgId: string) {
-    const project = await this.getProjectOrFail(id, orgId);
-    await this.assertCanRead(project as any, userId, orgId);
+    await this.getProjectOrFail(id, orgId);
+    await this.assertHasReadAccess(id, userId, orgId);
 
     return this.prisma.projectClause.findMany({
       where: { projectId: id },
@@ -371,8 +373,8 @@ export class ProjectsService {
   }
 
   async getShares(id: string, userId: string, orgId: string) {
-    const project = await this.getProjectOrFail(id, orgId);
-    await this.assertCanRead(project as any, userId, orgId);
+    await this.getProjectOrFail(id, orgId);
+    await this.assertHasReadAccess(id, userId, orgId);
 
     return this.prisma.projectShare.findMany({
       where: { projectId: id },
@@ -823,6 +825,16 @@ export class ProjectsService {
     }
   }
 
+  private buildUserVisibilityOrConditions(userId: string): Prisma.ProjectWhereInput[] {
+    return [
+      { createdById: userId },
+      { currentHolderId: userId },
+      { shares: { some: { userId } } },
+      { workflowHistory: { some: { performedById: userId } } },
+      { workflowStep: WorkflowStep.PUBLISHED },
+    ];
+  }
+
   private async getUserRoles(userId: string, orgId: string): Promise<RoleName[]> {
     const userRoles = await this.prisma.userRole.findMany({
       where: { userId, organizationId: orgId },
@@ -831,21 +843,14 @@ export class ProjectsService {
     return userRoles.map((ur) => ur.role.name);
   }
 
-  private async assertCanRead(
-    project: {
-      createdById: string;
-      currentHolderId: string | null;
-      shares: Array<{ userId: string }>;
-    },
-    userId: string,
-    orgId: string,
-  ) {
-    if (project.createdById === userId) return;
-    if (project.currentHolderId === userId) return;
-    if (project.shares.some((s) => s.userId === userId)) return;
+  private async assertHasReadAccess(projectId: string, userId: string, orgId: string): Promise<void> {
     const roles = await this.getUserRoles(userId, orgId);
-    if (roles.includes(RoleName.ADMIN) || roles.includes(RoleName.USER)) return;
-    throw new ForbiddenException("Vous n'avez pas accès à ce projet");
+    if (roles.includes(RoleName.ADMIN)) return;
+    const found = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId: orgId, OR: this.buildUserVisibilityOrConditions(userId) },
+      select: { id: true },
+    });
+    if (!found) throw new ForbiddenException("Vous n'avez pas accès à ce projet");
   }
 
   private async assertCanWrite(
