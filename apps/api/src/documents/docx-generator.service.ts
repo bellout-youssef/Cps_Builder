@@ -365,18 +365,25 @@ export class DocxGeneratorService {
   }
 
   private buildChapter4(prices: Array<{ code: string; title: string; unit: string; description: string }>): (Paragraph | Table)[] {
-    if (!prices.length) return [];
-    const rows = prices.flatMap((p) => [
-      new Paragraph({
-        shading: { type: ShadingType.SOLID, color: C.marine },
-        children: [
-          new TextRun({ text: `${p.code} — ${p.title}`, bold: true, color: C.white, font: 'Calibri', size: 20, smallCaps: true }),
-          new TextRun({ text: `  (${p.unit})`, color: C.white, size: 18, italics: true }),
-        ],
-      }),
-      new Paragraph({ children: [new TextRun({ text: p.description, size: 21 })] }),
-      new Paragraph({ children: [] }),
-    ]);
+    if (!prices.length) return [this.h1('Chapitre IV — Définition des Prix'), this.pageBreak()];
+    const rows = prices.flatMap((p) => {
+      const descRuns = p.description.split('\n').flatMap((line, i) =>
+        i === 0
+          ? [new TextRun({ text: line, size: 21 })]
+          : [new TextRun({ break: 1, text: line, size: 21 })],
+      );
+      return [
+        new Paragraph({
+          shading: { type: ShadingType.SOLID, color: C.marine },
+          children: [
+            new TextRun({ text: `${p.code} — ${p.title}`, bold: true, color: C.white, font: 'Calibri', size: 20, smallCaps: true }),
+            new TextRun({ text: `  (${p.unit})`, color: C.white, size: 18, italics: true }),
+          ],
+        }),
+        new Paragraph({ children: descRuns }),
+        new Paragraph({ children: [] }),
+      ];
+    });
 
     return [this.h1('Chapitre IV — Définition des Prix'), ...rows, this.pageBreak()];
   }

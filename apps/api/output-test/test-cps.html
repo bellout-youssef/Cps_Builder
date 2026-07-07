@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS — 260707_CPS_TMPA_0042</title>
+<style>
+/* ─── Base ─────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  color: #000000;
+  line-height: 1.45;
+  background: #ffffff;
+}
+
+/* ─── Print / Page ──────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 2.54cm 2.54cm 3.5cm 2.54cm; }
+  h1, h2, h3 { page-break-after: avoid; }
+  .page-break { page-break-before: always; }
+  .no-break { page-break-inside: avoid; }
+}
+
+/* ─── Headings ──────────────────────────────────────────────────── */
+h1 {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  color: #0F4761;
+  margin: 18pt 0 4pt;
+  page-break-after: avoid;
+}
+h2 {
+  font-family: 'Calibri Light', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 16pt;
+  font-weight: 700;
+  color: #4472C4;
+  font-variant: small-caps;
+  border-bottom: 1pt solid #5B9BD5;
+  margin: 14pt 0 8pt;
+  padding-bottom: 4pt;
+  page-break-after: avoid;
+}
+h3 {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #000000;
+  margin: 12pt 0 3pt;
+  page-break-after: avoid;
+}
+h4 {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 8pt 0 2pt;
+}
+
+/* ─── Cover ─────────────────────────────────────────────────────── */
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 60pt 50pt;
+  page-break-after: always;
+}
+.cover-org {
+  align-self: flex-start;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 12pt;
+  font-variant: small-caps;
+  color: #0070C0;
+  font-weight: 700;
+}
+.cover-body {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16pt;
+}
+.cover-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-variant: small-caps;
+  color: #4472C4;
+  letter-spacing: 4pt;
+  text-transform: uppercase;
+}
+.cover-title {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #0F4761;
+  line-height: 1.3;
+}
+.cover-type-badge {
+  display: inline-block;
+  background: #0070C0;
+  color: white;
+  font-size: 9pt;
+  font-variant: small-caps;
+  padding: 3pt 8pt;
+  margin: 2pt;
+  border-radius: 2pt;
+}
+.cover-meta {
+  font-size: 10pt;
+  color: #555555;
+  line-height: 1.8;
+  text-align: center;
+}
+.cover-code {
+  align-self: stretch;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  text-align: right;
+  border-top: 1pt solid #0070C0;
+  border-bottom: 1pt solid #0070C0;
+  padding: 6pt 0;
+  letter-spacing: 1pt;
+}
+
+/* ─── TOC ───────────────────────────────────────────────────────── */
+.toc { margin: 20pt 0; }
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 5pt;
+}
+.toc-item-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.toc-item-label.lvl1 {
+  font-weight: 700;
+  color: #0070C0;
+  font-size: 9pt;
+}
+.toc-item-label.lvl2 {
+  font-size: 9pt;
+  margin-left: 20pt;
+}
+.toc-dots {
+  flex: 1;
+  border-bottom: 0.5pt dotted #888;
+  margin: 0 6pt;
+  min-width: 20pt;
+}
+.toc-page {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 9pt;
+  color: #0070C0;
+  white-space: nowrap;
+}
+
+/* ─── Clauses ───────────────────────────────────────────────────── */
+.clause { margin-bottom: 18pt; }
+.clause-header { display: flex; align-items: baseline; gap: 8pt; margin-bottom: 4pt; }
+.clause-number {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.clause-title { font-weight: 700; font-size: 11pt; }
+.clause-content { text-align: justify; line-height: 1.5; }
+.clause-modified {
+  border-left: 3pt solid #FFC000;
+  padding-left: 8pt;
+  background-color: #FFFBEE;
+}
+.clause-badge {
+  display: inline-block;
+  font-size: 8pt;
+  color: #B07000;
+  font-style: italic;
+  margin-bottom: 4pt;
+}
+.sub-clause { margin: 8pt 0 0 24pt; }
+.sub-clause-title { font-weight: 700; font-size: 10pt; margin-bottom: 2pt; }
+
+/* ─── Chapitre II Questionnaire ─────────────────────────────────── */
+.q-item { margin-bottom: 14pt; }
+.q-question { font-weight: 700; margin-bottom: 4pt; }
+.q-answer {
+  padding: 6pt 8pt;
+  border: 0.5pt solid #CCCCCC;
+  background: #F8F8F8;
+  text-align: justify;
+}
+
+/* ─── Chapitre IV Définition des prix ───────────────────────────── */
+.prix-item {
+  border: 0.5pt solid #DDDDDD;
+  margin-bottom: 12pt;
+  page-break-inside: avoid;
+}
+.prix-header {
+  background-color: #0F4761;
+  color: white;
+  font-weight: 700;
+  padding: 5pt 8pt;
+  font-size: 10pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.prix-code { font-variant: small-caps; letter-spacing: 1pt; }
+.prix-unit { font-size: 9pt; font-style: italic; }
+.prix-desc { padding: 8pt; font-size: 10.5pt; line-height: 1.5; text-align: justify; white-space: pre-wrap; }
+
+/* ─── Tables TMPA (BDP / ESTIM) ─────────────────────────────────── */
+.table-tmpa {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9pt;
+  margin-bottom: 24pt;
+}
+.table-tmpa th {
+  background-color: #0070C0;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 5pt 4pt;
+  border: 0.5pt solid #004E90;
+  text-align: center;
+  font-variant: small-caps;
+}
+.table-tmpa td {
+  border: 0.5pt solid #CCCCCC;
+  padding: 3pt 4pt;
+  vertical-align: top;
+}
+.table-tmpa .td-num {
+  text-align: right;
+  white-space: nowrap;
+}
+.table-tmpa .td-center { text-align: center; }
+.table-tmpa .row-lot td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+  font-size: 9.5pt;
+}
+.table-tmpa .row-section td {
+  background-color: #DEEAF1;
+  color: #0F4761;
+  font-weight: 700;
+  font-style: italic;
+}
+.table-tmpa .row-sub-section td {
+  background-color: #EBF3FB;
+  color: #4472C4;
+  font-weight: 700;
+}
+.table-tmpa .row-total td {
+  background-color: #4472C4;
+  color: #ffffff;
+  font-weight: 700;
+}
+.table-tmpa .row-grand-total td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+}
+
+/* ─── RECAP (Estimation) ────────────────────────────────────────── */
+.recap-title {
+  font-family: Calibri, sans-serif;
+  font-variant: small-caps;
+  font-weight: 700;
+  color: #0F4761;
+  font-size: 12pt;
+  margin-bottom: 8pt;
+}
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="cover-org">Tanger Med Port Authority</div>
+  <div class="cover-body">
+    <div class="cover-label">Cahier des Prescriptions Spéciales</div>
+    <div class="cover-title">Construction et équipement du nouveau siège social TMPA</div>
+    <div style="color:#555;font-size:10pt;text-align:center;max-width:80%">Bâtiment R+5 de 4 200 m² + parking souterrain 80 places + VRD — Tanger Med</div>
+    <div><span class="cover-type-badge">B — Bâtiment</span> <span class="cover-type-badge">A — Aménagement</span></div>
+    <div class="cover-meta">
+      Créé par : <strong>Youssef Bellout</strong><br>
+      Publié le : <strong>07 juillet 2026</strong>
+    </div>
+  </div>
+  <div class="cover-code">260707_CPS_TMPA_0042</div>
+</section>
+<section class="page-break">
+<h1>Sommaire</h1>
+<div class="toc"><div class="toc-item">
+    <span class="toc-item-label lvl1">Préambule</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre I — Clauses Communes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre II — Questionnaire</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre III — Clauses Techniques</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre IV — Définition des Prix</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre V — Bordereau des Prix et Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Bordereau des Prix Détail</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Annexes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div></div>
+</section>
+<section class="page-break">
+<h1>Préambule</h1>
+<div><p>Entre la <strong>Tanger Med Port Authority (TMPA)</strong>, représentée par son Directeur Général M. Khalid Alaoui, ci-après dénommée « le Maître d'Ouvrage », d'une part,</p>
+<p>et l'Entrepreneur retenu à l'issue de la procédure d'appel d'offres ouvert n° AO-2026-DTT-0042, ci-après dénommé « l'Entrepreneur », d'autre part,</p>
+<p><strong>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</strong></p></div>
+</section>
+<section class="page-break">
+<h1>Chapitre I — Clauses Communes</h1>
+<div class="clause">
+  
+  <div class="clause-header">
+    <span class="clause-number">1.1</span>
+    <span class="clause-title">PIÈCES CONSTITUTIVES DU MARCHÉ</span>
+  </div>
+  <div class="clause-content"><p>Les pièces constitutives du marché sont, par ordre de priorité :<br>1° Le présent CPS ;<br>2° Le Bordereau des Prix Détail Estimatif ;<br>3° Les plans et documents techniques joints au DCE ;<br>4° Le Référentiel Général des Achats TMSA.</p></div>
+  
+</div>
+<div class="clause">
+  
+  <div class="clause-header">
+    <span class="clause-number">1.2</span>
+    <span class="clause-title">NANTISSEMENT</span>
+  </div>
+  <div class="clause-content"><p>Dans l'éventualité d'une affectation en nantissement, il sera fait application des dispositions de la loi n° 112-13 relative au nantissement des marchés publics.</p></div>
+  
+</div>
+<div class="clause">
+  
+  <div class="clause-header">
+    <span class="clause-number">1.3</span>
+    <span class="clause-title">REPRÉSENTANT DU MAÎTRE D'OUVRAGE SUR LE CHANTIER</span>
+  </div>
+  <div class="clause-content"><p>Le maître d'ouvrage sera représenté sur le chantier par le maître d'œuvre désigné à l'article 2.2, assisté du bureau de contrôle. Tout ordre de service est signé par le représentant désigné du maître d'ouvrage.</p></div>
+  
+</div>
+</section>
+<section class="page-break">
+<h1>Chapitre II — Clauses Administratives et Financières Spécifiques</h1>
+<h2>Article 2.1 — OBJET DU MARCHÉ</h2>
+<p>Le présent marché a pour objet la réalisation de travaux relatifs à construction, équipement et aménagements extérieurs du nouveau siège social de la Tanger Med Port Authority, comprenant un bâtiment R+5 de 4 200 m², parking souterrain de 80 places et VRD complets</p>
+<p>à Zone Franche du Port de Tanger Med, Commune de Ksar Sghir, Province de Fahs-Anjra</p>
+<h2>Article 2.2 — INTERVENANTS</h2>
+<p>Les intervenants du présent marchés sont :</p>
+<p>Le maitre d'ouvrage  :Tanger Med Port Authority (TMPA) — Direction des Travaux et de la Technique</p>
+<p>Le maitre d'œuvre (Architecte, BET…):Groupement ATELIER D'ARCHITECTURE AMINE &amp; Associés / BET INGÉNIA CONSEIL</p>
+<p>Bureau de Contrôle:Bureau VERITAS Maroc — Agence Nord</p>
+<p>Cabinet topographique ;Cabinet TOPOMAG — Tanger</p>
+<h2>Article 2.3 — CONSISTANCE DES TRAVAUX</h2>
+<p>Les travaux à exécuter au titre du présent marché consistent en ce qui suit :</p>
+<ul><li>Travaux de terrassements généraux et fouilles en grande masse</li><li>Gros-œuvre béton armé (fondations, dalles, voiles, poteaux, poutres)</li><li>Maçonnerie, isolation thermique et acoustique des façades</li><li>Menuiseries aluminium et vitrages haute performance</li><li>Revêtements de sols et de murs intérieurs</li><li>Faux-plafonds, cloisons légères et aménagements intérieurs</li><li>Plomberie sanitaire, réseaux d'incendie sprinkler</li><li>Électricité courants forts et courants faibles (SSI, contrôle d'accès, vidéosurveillance)</li><li>CVC : climatisation VRF + ventilation double flux</li><li>Ascenseurs et monte-charge (2 cabines)</li><li>Voirie, réseaux divers extérieurs (VRD) et espaces verts</li><li>Parking souterrain R-1 (béton armé, 80 places)</li></ul>
+<h2>Article 2.4 — RÉFÉRENCE AUX TEXTES SPÉCIAUX APPLICABLES AU MARCHÉ</h2>
+<p>Le titulaire du marché est soumis aux dispositions des textes suivants :</p>
+<ul><li>Référentiel Général des Achats TMSA (RGA) — édition 2023</li><li>Décret n° 2-22-431 du 15 mars 2023 relatif aux marchés publics</li><li>Norme marocaine NM 01.4.098 — Béton — Spécification, performance, production et conformité</li><li>NM ISO 9001:2015 — Systèmes de management de la qualité</li><li>Règlement parasismique RPS 2011 (révisé 2019)</li><li>DTU applicable aux travaux du bâtiment</li><li>Loi n° 65-99 relative au Code du Travail</li><li>Loi-cadre n° 99-12 portant Charte Nationale de l'Environnement et du Développement Durable</li></ul>
+<p>Ainsi que tous les textes relatifs à la conformité légale et réglementaire ayant trait à l'aspect environnemental en vigueur à la date de la signature du contrat, demeurent applicables.</p>
+<p>L'entrepreneur devra se procurer ces documents s'il ne les possède pas et ne pourra en aucun cas exciper de l'ignorance de ceux-ci et se dérober aux obligations qui y sont contenues.</p>
+<p>En cas de contradiction entre ces textes, les prescriptions des documents les plus récents primeront.</p>
+<h2>Article 2.5 — CAUTIONNEMENT DÉFINITIF</h2>
+<p>Le montant du cautionnement définitif est fixé à (3%) du montant initial du marché éventuellement complété par les avenants intervenus.</p>
+<p>Si l'entrepreneur ne réalise pas le cautionnement définitif dans un délai de 30 jours à compter de la date de la notification de l'approbation du présent marché, le cautionnement provisoire reste acquis au Maitre d'ouvrage.</p>
+<p>Dans le cas de non-production, le montant total du cautionnement définitif, sera retenu sur les sommes dues à partir du premier décompte.</p>
+<p>Le cautionnement définitif doit être établi, selon le modèle prévu à cet effet, auprès des banques agrées par les autorités marocaines.</p>
+<p>Les conditions de restitution des garanties pécuniaires ou libération des cautions sont celles énumérée l'Article 15 du Référentiel Général des Achats -TMSA- fixant les Conditions Administratives Générales applicables aux Marches de Travaux et de Fournitures</p>
+<h2>Article 2.6 — DURÉE, DÉLAI D'EXÉCUTION OU DATE D'ACHÈVEMENT</h2>
+<p>Les prestations du présent marché seront réalisées suivant les délais prescrits dans le tableau suivant :</p>
+<table class="table-tmpa"><thead><tr><th></th><th>Délai d'exécution</th><th>Date de commencement</th><th>Date limite de l'OSC</th><th>Condition de réception</th></tr></thead><tbody><tr><td>Tranche ferme</td><td>(18) mois</td><td>À partir de la date de commencement des prestations prescrites dans l'ordre de service de l'OSC 1</td><td>L'OSC 1 est donné au plus tard 60 jours après la date de signature du contrat</td><td>À l'achèvement de toutes les prestations relatives à ce délai y compris livrables sanctionné par un pv de réception provisoire partielle</td></tr><tr><td>Tranche optionnelle N°1 — Parking souterrain</td><td>(10) mois</td><td>À partir de la date de commencement des prestations prescrites dans l'ordre de service de l'OSC afférant à la Tranche optionnelle N°1</td><td>Le maître d'ouvrage doit confirmer la Tranche optionnelle N°1 au plus tard dans un délai de 6 mois à partir de la fin du délai d'exécution de la tranche ferme par OSC</td><td>À l'achèvement de toutes les prestations relatives à ce délai y compris livrables sanctionné par un pv de réception provisoire partielle</td></tr><tr><td>Tranche optionnelle N°2 — Espaces verts et VRD complémentaires</td><td>(6) mois</td><td>À partir de la date de commencement des prestations prescrites dans l'ordre de service de l'OSC afférant à la Tranche optionnelle N°2</td><td>Le maître d'ouvrage doit confirmer la Tranche optionnelle N°2 au plus tard dans un délai de 3 mois à partir de la fin du délai d'exécution de la Tranche optionnelle N°1 par OSC</td><td>À l'achèvement de toutes les prestations relatives à ce délai y compris livrables sanctionné par un pv de réception provisoire partielle</td></tr></tbody></table>
+<p>OSC : ordre service pour commencer des prestations</p>
+<p>Un mois calendaire est égal à 30 jours.</p>
+<p>Si la tranche optionnelle n'a pas été confirmée dans le délai prévu, le maitre d'ouvrage demande au prestataire le maintien de son offre pour une durée de <strong>90 (quatre-vingt-dix) jours</strong>, à défaut la tranche en question est annulée.</p>
+<p>N.B. Le prestataire peut refuser le maintien de l'offre, dans ce cas de figure, la tranche optionnelle est automatiquement annulée.</p>
+<h2>Article 2.7 — DÉLAI DE GARANTIE</h2>
+<p>Le délai de garantie est fixé à <strong>12 (douze) mois</strong> à compter de la date de la réception provisoire ou à défaut de la date de la réception provisoire partielle.</p>
+<p>Pendant le délai de garantie, l'entrepreneur sera tenu de remettre au maître d'ouvrage les plans des ouvrages conformes à l'exécution, de procéder aux rectifications qui lui seraient demandées en cas de malfaçons ou d'insuffisances constatées et de remédier à l'ensemble des défectuosités, sans pour autant que ces travaux supplémentaires puissent donner lieu au paiement à l'exception de ceux résultant de l'usure normale, d'un abus d'usage ou de dommages causés par des tiers.</p>
+<h2>Article 2.8 — PÉNALITÉS POUR RETARD</h2>
+<p>En cas de retard dans l'exécution des prestations, il est appliqué une pénalité par jour calendaire de retard à l'encontre du Prestataire, si le retard affecte le délai principal du marché.</p>
+<table class="table-tmpa"><thead><tr><th>Tranche</th><th>Pénalités</th></tr></thead><tbody><tr><td>Tranche ferme</td><td>(1/1000) du montant du marché</td></tr><tr><td>Tranche optionnelle N°1 — Parking souterrain</td><td>(1/1000) du montant du marché</td></tr><tr><td>Tranche optionnelle N°2 — Espaces verts et VRD complémentaires</td><td>(1/1000) du montant du marché</td></tr></tbody></table>
+<p>Ledit montant est celui du marché initial, éventuellement majoré par les montants correspondants aux travaux supplémentaires et à l'augmentation dans la masse des travaux.</p>
+<p>Ces pénalités seront appliquées de plein droit et sans mise en demeure sur toutes les sommes dues au prestataire.</p>
+<p>Les pénalités sont encourues du simple fait de la constatation du retard ou écart par le Maître d'Ouvrage qui, sans préjudice de toute autre méthode de recouvrement, déduit d'office le montant de ces pénalités de toutes les sommes dont titulaire est redevable.</p>
+<p>L'application de ces pénalités ne libère en rien le Prestataire de l'ensemble des autres obligations et responsabilités qu'il a souscrites au titre du marché.</p>
+<p>Dans le cas de résiliation suite à la défaillance de l'entrepreneur, les pénalités sont appliquées jusqu'au jour d'ultimatum indiqué dans la dernière mise en demeure notifiée au prestataire ou jusqu'au jour d'arrêt de l'exploitation de l'entreprise si la résiliation résulte d'une liquidation ou redressement judiciaire, Décès ou incapacité physique de l'entrepreneur.</p>
+<p>La résiliation, si elle est prononcée, prend effet à la date de la décision du syndic de renoncer à poursuivre l'exécution du Marché ou de l'expiration du délai de (1) mois ci-dessus. Elle n'ouvre droit, pour l'Entrepreneur, à aucune indemnité</p>
+<p>Les journées de repos hebdomadaire ainsi que les jours fériés ou chômés ne sont pas déduites pour le calcul des montants des pénalités.</p>
+<p>Lorsque le plafond des pénalités est atteint, le Maître d'ouvrage est en droit de résilier le marché sans mise en demeure préalable</p>
+<p>D'autres pénalités applicables :</p>
+<ul><li>Défaut d'affichage du panneau de chantier réglementaire : 2 000 DH par jour de manquement constaté</li><li>Non-respect du plan de gestion environnementale : 5 000 DH par infraction constatée</li><li>Absence non justifiée du chef de chantier pendant les heures ouvrables : 1 000 DH par demi-journée</li><li>Non-respect du plan de circulation interne au port : 3 000 DH par infraction</li></ul>
+<p>L'ensemble des montants des pénalités est plafonné à (<strong>10</strong>%) du montant initial du marché éventuellement complété par les montants correspondant aux travaux supplémentaires et à l'augmentation dans la masse des prestations.</p>
+<p>Les pénalités particulières sont prélevées dans les mêmes conditions que celles prévues pour les pénalités pour retard dans l'exécution des prestations.</p>
+<h2>Article 2.9 — RÉVISION DES PRIX</h2>
+<p>La révision des prix, il est passé conformément à Arrêté du Chef du gouvernement n° 3-302-15 du 15 safar 1437 fixant les règles et les conditions de révision des prix des marchés publics. (B.O. n° 6422 du 17 décembre 2015).</p>
+<p>Si pendant le délai contractuel, des variations sont constatées dans la valeur des index de références, les prix du marché sont révisés par application de la formule ci-dessous.</p>
+<p style="font-family:monospace;font-size:12pt;font-weight:bold;text-align:center;margin:12pt 0">P = Po [0,15 + 0,35 (I/Io) + 0,30 (..)] ; où</p>
+<ul><li>P : est le montant hors taxe révisé de la prestation considérée</li><li>Po : le montant initial hors taxe de cette même prestation</li><li>k = 0,15 : est la partie fixe</li><li>k = 0,15 ; a = 0,35 ; b = 0,30 : coefficients invariables tels que k+a+b = 1</li><li>P/Po : étant le coefficient de révision des prix</li><li>Io : est la valeur de l'index global relatif à la prestation considérée au mois : * de la date limite de remise des offres ; * de la date de la signature du marché par l'attributaire lorsque ce dernier est négocié.</li><li>I : est la valeur de l'index du mois de la date de l'exigibilité de la révision.</li></ul>
+<p>La révision des prix sera appliquée aux travaux qui restent à exécuter à partir de la date de variation des index constatée par les décisions prises à cet effet par le ministre chargé de l'équipement.</p>
+<p>La variation de la révision des prix est limitée à cinq pour cent (5%) du montant initial du marché.</p>
+<p>Pour les avenants, l'époque de base pour le calcul de la révision des prix est la date de signature de l'avenant par le maître d'ouvrage.</p>
+<p>En cas d'un retard dans l'exécution des travaux imputables à l'Entrepreneur, les prestations réalisées après le délai contractuel d'exécution seront payées sur la base des prix révisés au jour de l'expiration du délai contractuel d'exécution (lui-même, éventuellement prorogé de la durée des retards non imputables à l'Entrepreneur).</p>
+<h2>Article 2.10 — SOUS-TRAITANCE</h2>
+<p>Conformément aux dispositions de l'Article 32 du Référentiel Général des Achats -TMSA- fixant les Conditions Administratives Générales applicables aux Marches de Travaux et de Fournitures, et si l'entrepreneur envisage de sous-traiter une partie du marché, il doit requérir l'accord préalable écrit du maître d'ouvrage dans les conditions fixées par ledit article.</p>
+<p>La sous-traitance ne peut en aucun cas dépasser (50%) du montant du marché ni porter sur le lot ou le corps d'état principal du marché.</p>
+<p>Les travaux énumérés ci-après ne peuvent faire l'objet de sous-traitance :</p>
+<ul><li>Gros-œuvre béton armé (fondations, structure porteuse)</li><li>Travaux d'étanchéité des terrasses et du parking souterrain</li><li>Installation électrique courants forts (TGBT et tableaux divisionnaires)</li></ul>
+<p>Le titulaire demeure personnellement responsable de toutes les obligations résultant du marché tant envers le maître d'ouvrage que vis-à-vis des ouvriers et les tiers.</p>
+<h2>Article 2.11 — APPROVISIONNEMENTS</h2>
+<p>Les approvisionnements en matériaux et matières premières destinés à entrer dans la composition des travaux objet du marché peuvent donner lieu à des acomptes sous réserve :</p>
+<ul><li>Qu'ils aient été acquis en toute propriété et effectivement payés par l'entrepreneur</li><li>Qu'ils soient lotis sur le chantier de manière telle que leur destination ne fasse aucun doute et qu'ils puissent être facilement contrôlés</li><li>Qu'ils soient nécessaires à l'exécution du marché.</li></ul>
+<p>Les acomptes sur approvisionnements seront réglés conformément aux prescriptions de l'article 62 de CAG.</p>
+<h2>Article 2.12 — CAS DE FORCE MAJEURE</h2>
+<p>On entend par force majeure tout acte ou événement imprévisible, irrésistible, hors du contrôle des parties et qui rend l'exécution du Marché pratiquement impossible, tel que catastrophes naturelles, incendies, explosions, guerre, mobilisation, grèves générales, tremblements de terre, mais non les événements qui rendraient seulement l'exécution d'une obligation plus difficile ou plus onéreuse pour son débiteur.</p>
+<p>En cas de survenance d'un événement de force majeure, l'entrepreneur a droit à une augmentation raisonnable des délais d'exécution.</p>
+<p>Deux cas se présentent :</p>
+<ul><li>Un ou des événements dont l'incidence contractuelle se limite à un arrêt de travail qui fera l'objet d'un ordre de service précisant la durée de prolongation.</li><li>Un événement ayant occasionné des incidences contractuelles autres que l'arrêt de travail fera l'objet d'un avenant si nécessaire.</li></ul>
+<p>Les durées d'arrêts doivent être constatées et formalisées à travers un PV par le Maitre d'Ouvrage ou son représentant. Le PV décrit l'événement ainsi que les incidences causées par l'arrêt (la durée de l'arrêt…)</p>
+<p>Aucune indemnité ne peut être accordée au titulaire pour perte totale ou partielle de son matériel, les frais d'assurance de ce matériel étant réputés compris dans les prix du marché.</p>
+<p>Les seuils des intempéries qui sont réputés constituer un événement de force majeure sont définis comme suit :</p>
+<table class="table-tmpa"><thead><tr><th>Evénement</th><th>Travaux Maritimes</th><th>Aménagement</th><th>Bâtiment</th></tr></thead><tbody><tr><td>Pluie</td><td>15 mm/Jour</td><td>5 mm/Jour</td><td>10 mm/Jour</td></tr><tr><td>Vent</td><td>Rafales dépassant 60 Km/h</td><td>Rafales dépassant 60 Km/h</td><td>Rafales dépassant 60 Km/h</td></tr><tr><td>Houle</td><td>6 m</td><td>NA</td><td>NA</td></tr><tr><td>Séisme</td><td>4 degrés sur l'échelle de Richter</td><td>4 degrés sur l'échelle de Richter</td><td>4 degrés sur l'échelle de Richter</td></tr></tbody></table>
+<p>Dans le cas d'intempéries dépassant le seuil fixé par le marché, entraînant un arrêt de travail sur les chantiers, les délais d'exécution des travaux sont prolongés. Cette prolongation est notifiée à l'Entrepreneur par un ordre de service qui en précise la durée, laquelle est égale au nombre de journées réellement constaté au cours desquelles le travail a été arrêté du fait des intempéries.</p>
+<p>En tout état de cause, l'entrepreneur qui invoque le cas de force majeure, devra aussitôt après l'apparition d'un tel cas, et dans un délai maximum de sept (7) jours, adresser au maître d'ouvrage une notification par lettre recommandée établissant les éléments constitutifs de la force majeure et ses conséquences probables sur la réalisation du marché.</p>
+<p>Dans tous les cas, le titulaire doit prendre toutes dispositions utiles pour assurer, dans les plus brefs délais, la reprise normale de l'exécution des obligations affectées par le cas de force majeure.</p>
+<p>Si, par la suite de cas de force majeure, le titulaire ne peut plus exécuter les prestations telles que prévues au marché pendant une période de (30) jours, il doit examiner dans les plus brefs délais avec le maître d'ouvrage les incidences contractuelles desdits événements sur l'exécution du marché, les délais et les obligations respectives de chacune des parties.</p>
+<p>Quand une situation de force majeure persiste pendant une période de soixante (60) jours au moins, le marché peut être résilié à l'initiative du maître d'ouvrage ou à la demande de l'entrepreneur.</p>
+<h2>Article 2.13 — CONDITIONS ET EXÉCUTION DE LA VARIANTE</h2>
+<p>Le Maître d'Ouvrage optera pour une quantité des prix plafonnée des ouvrages ou partie d'ouvrage impactée par la variante avec value engineering. Conformément aux règles suivantes :</p>
+<p>le titulaire s'engage sur le coût global de son offre variante ou de la / les séries objets de sa variante proposée ou impactées par la variante proposée. En aucun cas, les études réalisées durant la phase d'exécution ne pourront donner lieu à une augmentation de la rémunération de l'Entrepreneur présentée dans son offre variante.</p>
+<p>En tout état de cause, les quantités de la / les séries objets de sa variante proposée ou impactées par la variante proposée mentionnées dans son bordereau des prix détail estimatif de l'offre financière « variante » ne pourront en aucun cas être dépassées. Tout dépassement éventuel dans les quantités réellement exécutées sera entièrement pris en charge par l'Entrepreneur à ses frais et ne pourra formuler aucune réclamation à ce sujet. A contrario, en cas de diminution dans les quantités de certains postes de prix objets de sa variante proposée ou impactées par la variante proposée, le titulaire ne sera réglé qu'à hauteur des quantités réellement réalisées augmentées de la moitié (50%) de l'écart entre les quantités indiquées au bordereau des prix détail estimatif de la variante et les quantités réellement exécutées. Le paiement des quantités de postes de prix objets de sa variante proposée ou impactées par la variante proposée se fera selon la règle suivante :</p>
+<ul><li>Si quantité réalisée ≥ quantité du bordereau de la variante : Quantité à payer = Quantité du bordereau de la variante</li><li>Si quantité réalisée &lt; quantité du bordereau de la variante : Quantité à payer = Quantité réalisée + 0.5 x (Quantité du bordereau de la variante – Quantité réalisée).</li></ul>
+<h2>Article 2.14 — RÉCEPTIONS</h2>
+<p><strong>Réception provisoires</strong></p>
+<p>Une Réception provisoire partielle sera déclarée après achèvement des prestation relatives à chaque tranche.</p>
+<p><strong>Réception définitive</strong></p>
+<p>Réception définitive partielle sera déclarée après la période de garantie, relative à chaque tranche à compter de sa réception provisoire partielle.</p>
+<p>Une réception provisoire globale sera déclarée en même temps que la dernière réception provisoire partielle.</p>
+<p>La réception définitive globale sera déclarée après la période de garantie relative à la dernière tranche optionnelle.</p>
+<p>Si la tranche optionnelle n'a pas été activée, la tranche optionnelle est automatiquement résiliée. Dans ce cas, les modalités de réceptions prévues au niveau des clauses communes seront appliquées.</p>
+</section>
+<section class="page-break">
+<h1>Chapitre III — Clauses Techniques</h1>
+<div class="clause">
+  
+  <div class="clause-header">
+    <span class="clause-number">CT-B-001</span>
+    <span class="clause-title">PRESCRIPTIONS GÉNÉRALES POUR LES TRAVAUX DE GROS-ŒUVRE</span>
+  </div>
+  <div class="clause-content"><p>L'entrepreneur doit se conformer aux prescriptions des normes marocaines en vigueur pour tous les matériaux utilisés. Le béton armé sera exécuté conformément aux règles BAEL 91 révisées 99 et au RPS 2011. Tout béton utilisé doit faire l'objet d'une étude de formulation préalablement soumise à l'approbation du bureau de contrôle.</p></div>
+  <div class="sub-clause">
+  <div class="sub-clause-title">Armatures</div>
+  <div class="clause-content"><p>Les aciers utilisés seront de nuance FeE500 soudable (aciers à haute adhérence). Les plans de ferraillage seront soumis au visa du bureau d'études et du bureau de contrôle avant toute mise en œuvre.</p></div>
+</div>
+<div class="sub-clause">
+  <div class="sub-clause-title">Coffrages</div>
+  <div class="clause-content"><p>Les coffrages seront de type soigné pour les parements vus. L'entrepreneur présentera un plan de coffrage pour chaque niveau avant exécution.</p></div>
+</div>
+</div>
+<div class="clause clause-modified">
+  <span class="clause-badge">&#9888; Modifié localement</span><br>
+  <div class="clause-header">
+    <span class="clause-number">CT-B-002</span>
+    <span class="clause-title">PRESCRIPTIONS POUR LES TRAVAUX D'ÉTANCHÉITÉ</span>
+  </div>
+  <div class="clause-content"><p>L'étanchéité des toitures-terrasses et du plancher haut du parking souterrain sera réalisée par membrane bitumineuse bicouche soudée à la flamme, avec protection lourde en dalles béton de 4 cm. Garantie décennale obligatoire. Essais d'arrosage contradictoires avant réception.</p></div>
+  
+</div>
+<div class="clause">
+  
+  <div class="clause-header">
+    <span class="clause-number">CT-B-003</span>
+    <span class="clause-title">PRESCRIPTIONS POUR LES INSTALLATIONS ÉLECTRIQUES</span>
+  </div>
+  <div class="clause-content"><p>Toutes les installations électriques seront conformes aux normes NF C 15-100 et NM 07.3.010. Le TGBT sera de classe II. L'entrepreneur fournira les schémas unifilaires, plans d'installation et notes de calcul pour approbation avant tout commencement de travaux électriques.</p></div>
+  
+</div>
+</section>
+<section class="page-break">
+<h1>Chapitre IV — Définition des Prix</h1>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">A-101 — Installation et repli de chantier — fourniture et mise en place de toutes installations provisoires</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix A-101 — Installation et repli de chantier — fourniture et mise en place de toutes installations provisoires.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">A-102 — Terrassements en déblais pour fouilles en grande masse, y compris évacuation</span>
+    <span class="prix-unit">m³</span>
+  </div>
+  <div class="prix-desc">Prix A-102 — Terrassements en déblais pour fouilles en grande masse, y compris évacuation.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m³.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">A-103 — Terrassements en remblais compactés par couches de 20 cm, matériaux d'apport</span>
+    <span class="prix-unit">m³</span>
+  </div>
+  <div class="prix-desc">Prix A-103 — Terrassements en remblais compactés par couches de 20 cm, matériaux d'apport.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m³.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">B-201 — Béton de propreté dosé à 150 kg/m³, épaisseur 10 cm</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix B-201 — Béton de propreté dosé à 150 kg/m³, épaisseur 10 cm.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">B-202 — Béton armé pour fondations semelles et longrines, dosé à 350 kg/m³</span>
+    <span class="prix-unit">m³</span>
+  </div>
+  <div class="prix-desc">Prix B-202 — Béton armé pour fondations semelles et longrines, dosé à 350 kg/m³.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m³.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">B-203 — Béton armé pour voiles et poteaux en élévation, dosé à 350 kg/m³</span>
+    <span class="prix-unit">m³</span>
+  </div>
+  <div class="prix-desc">Prix B-203 — Béton armé pour voiles et poteaux en élévation, dosé à 350 kg/m³.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m³.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">B-204 — Béton armé pour dalles et poutres, dosé à 350 kg/m³</span>
+    <span class="prix-unit">m³</span>
+  </div>
+  <div class="prix-desc">Prix B-204 — Béton armé pour dalles et poutres, dosé à 350 kg/m³.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m³.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">B-205 — Maçonnerie en parpaings creux 20 cm, montée au mortier de ciment</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix B-205 — Maçonnerie en parpaings creux 20 cm, montée au mortier de ciment.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">C-301 — Menuiserie aluminium — portes et fenêtres à rupture de pont thermique, double vitrage</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix C-301 — Menuiserie aluminium — portes et fenêtres à rupture de pont thermique, double vitrage.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">C-302 — Revêtement de sol en carrelage grès cérame 60×60, pose scellée</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix C-302 — Revêtement de sol en carrelage grès cérame 60×60, pose scellée.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">C-303 — Faux-plafond en dalles minérales 600×600, structure aluminium</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix C-303 — Faux-plafond en dalles minérales 600×600, structure aluminium.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">D-401 — Réseau eau froide et eau chaude sanitaire, y compris appareillages</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix D-401 — Réseau eau froide et eau chaude sanitaire, y compris appareillages.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">D-402 — Réseau incendie sprinkler — fourniture, pose et essais complets</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix D-402 — Réseau incendie sprinkler — fourniture, pose et essais complets.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">E-501 — Tableau général basse tension (TGBT) — fourniture, pose et raccordement</span>
+    <span class="prix-unit">U</span>
+  </div>
+  <div class="prix-desc">Prix E-501 — Tableau général basse tension (TGBT) — fourniture, pose et raccordement.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : U.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">E-502 — Réseau courants forts — câblage, chemins de câbles, luminaires LED</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix E-502 — Réseau courants forts — câblage, chemins de câbles, luminaires LED.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">E-503 — Système de sécurité incendie (SSI) — catégorie A, fourniture et installation</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix E-503 — Système de sécurité incendie (SSI) — catégorie A, fourniture et installation.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">F-601 — Climatisation VRF — unités intérieures et extérieures, pose et mise en service</span>
+    <span class="prix-unit">Fft</span>
+  </div>
+  <div class="prix-desc">Prix F-601 — Climatisation VRF — unités intérieures et extérieures, pose et mise en service.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : Fft.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">F-602 — Ascenseurs 8 personnes, vitesse 1 m/s — fourniture, pose et mise en service</span>
+    <span class="prix-unit">U</span>
+  </div>
+  <div class="prix-desc">Prix F-602 — Ascenseurs 8 personnes, vitesse 1 m/s — fourniture, pose et mise en service.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : U.</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">G-701 — Voirie en béton bitumineux 0/10, épaisseur 8 cm, sur grave non traitée 20 cm</span>
+    <span class="prix-unit">m²</span>
+  </div>
+  <div class="prix-desc">Prix G-701 — Voirie en béton bitumineux 0/10, épaisseur 8 cm, sur grave non traitée 20 cm.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : m².</div>
+</div>
+<div class="prix-item no-break">
+  <div class="prix-header">
+    <span class="prix-code">G-702 — Réseau EU/EP enterré PVC DN200 à DN400, y compris regards et ouvrages annexes</span>
+    <span class="prix-unit">ml</span>
+  </div>
+  <div class="prix-desc">Prix G-702 — Réseau EU/EP enterré PVC DN200 à DN400, y compris regards et ouvrages annexes.
+Ce prix rémunère au forfait ou à l'unité tous les travaux, fournitures, main-d'œuvre, matériaux, matériels, frais généraux et bénéfice nécessaires à la réalisation complète de la prestation désignée, conformément aux plans, CCTP et prescriptions du présent CPS.
+Unité : ml.</div>
+</div>
+</section>
+<section class="page-break">
+<h1>Chapitre V — Bordereau des Prix et Estimation</h1>
+<h2>A — Bordereau des Prix Détail</h2>
+<table class="table-tmpa">
+<thead>
+  <tr>
+    <th style="width:12%">N° de Prix</th>
+    <th>Désignation des Prestations</th>
+    <th style="width:8%">U</th>
+  </tr>
+</thead>
+<tbody>
+<tr class="row-lot"><td colspan="3">LOT A : TERRASSEMENTS ET INFRASTRUCTURE</td></tr>
+<tr class="row-section"><td colspan="3"><em>Installation et terrassements</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">A-101</td>
+  <td>Installation et repli de chantier</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">A-102</td>
+  <td>Terrassements en déblais</td>
+  <td class="td-center">m³</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">A-103</td>
+  <td>Terrassements en remblais compactés</td>
+  <td class="td-center">m³</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT A</td><td class="td-num">1.850.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT B : GROS-ŒUVRE ET MAÇONNERIE</td></tr>
+<tr class="row-section"><td colspan="3"><em>Béton armé</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">B-201</td>
+  <td>Béton de propreté</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-202</td>
+  <td>Béton armé fondations</td>
+  <td class="td-center">m³</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-203</td>
+  <td>Béton armé voiles et poteaux</td>
+  <td class="td-center">m³</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-204</td>
+  <td>Béton armé dalles et poutres</td>
+  <td class="td-center">m³</td>
+</tr>
+<tr class="row-section"><td colspan="3"><em>Maçonnerie</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">B-205</td>
+  <td>Maçonnerie en parpaings creux 20 cm</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT B</td><td class="td-num">6.420.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT C : CORPS D'ÉTAT SECONDAIRES</td></tr>
+<tr class="row-section"><td colspan="3"><em>Menuiseries et finitions</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">C-301</td>
+  <td>Menuiserie aluminium RPT + double vitrage</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">C-302</td>
+  <td>Revêtement sol grès cérame 60×60</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">C-303</td>
+  <td>Faux-plafond dalles minérales 600×600</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT C</td><td class="td-num">3.180.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT D : PLOMBERIE SANITAIRE ET INCENDIE</td></tr>
+<tr class="row-section"><td colspan="3"><em>Réseaux fluides</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">D-401</td>
+  <td>Réseau eau froide / eau chaude sanitaire</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">D-402</td>
+  <td>Réseau incendie sprinkler</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT D</td><td class="td-num">1.240.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT E : ÉLECTRICITÉ ET COURANTS FAIBLES</td></tr>
+<tr class="row-section"><td colspan="3"><em>Installations électriques</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">E-501</td>
+  <td>Tableau général basse tension (TGBT)</td>
+  <td class="td-center">U</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">E-502</td>
+  <td>Réseau courants forts — câblage et luminaires LED</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">E-503</td>
+  <td>Système SSI catégorie A</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT E</td><td class="td-num">2.650.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT F : CVC ET ÉQUIPEMENTS SPÉCIAUX</td></tr>
+<tr class="row-section"><td colspan="3"><em>Équipements techniques</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">F-601</td>
+  <td>Climatisation VRF — fourniture, pose, mise en service</td>
+  <td class="td-center">Fft</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">F-602</td>
+  <td>Ascenseurs 8 personnes (2 cabines)</td>
+  <td class="td-center">U</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT F</td><td class="td-num">2.100.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="3">LOT G : VRD ET AMÉNAGEMENTS EXTÉRIEURS</td></tr>
+<tr class="row-section"><td colspan="3"><em>Voirie et réseaux</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">G-701</td>
+  <td>Voirie en béton bitumineux 0/10</td>
+  <td class="td-center">m²</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">G-702</td>
+  <td>Réseau EU/EP enterré PVC</td>
+  <td class="td-center">ml</td>
+</tr>
+<tr class="row-total"><td colspan="2">Total LOT G</td><td class="td-num">1.560.000,00 DH HT</td></tr>
+</tbody>
+</table>
+<h2>B — Estimation</h2>
+<div class="recap-title">Récapitulation</div>
+<table class="table-tmpa" style="margin-bottom:32pt">
+<thead>
+  <tr>
+    <th style="width:10%">Lot</th>
+    <th>Désignation</th>
+    <th style="width:12%">Surface (m²)</th>
+    <th style="width:10%">Ratio</th>
+    <th style="width:15%">Prix Total DH HT</th>
+  </tr>
+</thead>
+<tbody><tr>
+  <td>LOT A</td>
+  <td>Terrassements et infrastructure</td>
+  <td class="td-num"></td>
+  <td class="td-num"></td>
+  <td class="td-num">1.450.900,00</td>
+</tr>
+<tr>
+  <td>LOT B</td>
+  <td>Gros-œuvre et maçonnerie</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">1.707,00</td>
+  <td class="td-num">7.168.000,00</td>
+</tr>
+<tr>
+  <td>LOT C</td>
+  <td>Corps d'état secondaires</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">1.060,00</td>
+  <td class="td-num">4.450.000,00</td>
+</tr>
+<tr>
+  <td>LOT D</td>
+  <td>Plomberie sanitaire et incendie</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">286,00</td>
+  <td class="td-num">1.200.000,00</td>
+</tr>
+<tr>
+  <td>LOT E</td>
+  <td>Électricité et courants faibles</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">607,00</td>
+  <td class="td-num">2.550.000,00</td>
+</tr>
+<tr>
+  <td>LOT F</td>
+  <td>CVC et équipements spéciaux</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">526,00</td>
+  <td class="td-num">2.210.000,00</td>
+</tr>
+<tr>
+  <td>LOT G</td>
+  <td>VRD et aménagements extérieurs</td>
+  <td class="td-num"></td>
+  <td class="td-num"></td>
+  <td class="td-num">1.355.000,00</td>
+</tr></tbody>
+</table>
+<table class="table-tmpa">
+<thead>
+  <tr>
+    <th style="width:10%">N° de Prix</th>
+    <th>Désignation des Prestations</th>
+    <th style="width:6%">U</th>
+    <th style="width:10%">Qté Totale</th>
+    <th style="width:12%">PU HT</th>
+    <th style="width:14%">PT HT</th>
+  </tr>
+</thead>
+<tbody>
+<tr class="row-lot"><td colspan="6">LOT A : TERRASSEMENTS ET INFRASTRUCTURE</td></tr>
+<tr class="row-section"><td colspan="6"><em>Installation et terrassements</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">A-101</td>
+  <td>Installation et repli de chantier</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">450.000,00</td>
+  <td class="td-num">450.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">A-102</td>
+  <td>Terrassements en déblais</td>
+  <td class="td-center">m³</td>
+  <td class="td-num">8.500,00</td>
+  <td class="td-num">85,00</td>
+  <td class="td-num">722.500,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">A-103</td>
+  <td>Terrassements en remblais compactés</td>
+  <td class="td-center">m³</td>
+  <td class="td-num">3.200,00</td>
+  <td class="td-num">87,00</td>
+  <td class="td-num">278.400,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT A</td><td class="td-num">1.450.900,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT B : GROS-ŒUVRE ET MAÇONNERIE</td></tr>
+<tr class="row-section"><td colspan="6"><em>Béton armé</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">B-201</td>
+  <td>Béton de propreté</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">1.200,00</td>
+  <td class="td-num">95,00</td>
+  <td class="td-num">114.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-202</td>
+  <td>Béton armé fondations</td>
+  <td class="td-center">m³</td>
+  <td class="td-num">680,00</td>
+  <td class="td-num">2.800,00</td>
+  <td class="td-num">1.904.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-203</td>
+  <td>Béton armé voiles et poteaux</td>
+  <td class="td-center">m³</td>
+  <td class="td-num">520,00</td>
+  <td class="td-num">3.200,00</td>
+  <td class="td-num">1.664.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">B-204</td>
+  <td>Béton armé dalles et poutres</td>
+  <td class="td-center">m³</td>
+  <td class="td-num">840,00</td>
+  <td class="td-num">2.950,00</td>
+  <td class="td-num">2.478.000,00</td>
+</tr>
+<tr class="row-section"><td colspan="6"><em>Maçonnerie</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">B-205</td>
+  <td>Maçonnerie en parpaings creux 20 cm</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">3.600,00</td>
+  <td class="td-num">280,00</td>
+  <td class="td-num">1.008.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT B</td><td class="td-num">7.168.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT C : CORPS D'ÉTAT SECONDAIRES</td></tr>
+<tr class="row-section"><td colspan="6"><em>Menuiseries et finitions</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">C-301</td>
+  <td>Menuiserie aluminium RPT + double vitrage</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">1.800,00</td>
+  <td class="td-num">1.450,00</td>
+  <td class="td-num">2.610.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">C-302</td>
+  <td>Revêtement sol grès cérame 60×60</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">3.800,00</td>
+  <td class="td-num">320,00</td>
+  <td class="td-num">1.216.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">C-303</td>
+  <td>Faux-plafond dalles minérales 600×600</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">3.200,00</td>
+  <td class="td-num">195,00</td>
+  <td class="td-num">624.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT C</td><td class="td-num">4.450.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT D : PLOMBERIE SANITAIRE ET INCENDIE</td></tr>
+<tr class="row-section"><td colspan="6"><em>Réseaux fluides</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">D-401</td>
+  <td>Réseau EF/ECS sanitaire</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">680.000,00</td>
+  <td class="td-num">680.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">D-402</td>
+  <td>Réseau incendie sprinkler</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">520.000,00</td>
+  <td class="td-num">520.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT D</td><td class="td-num">1.200.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT E : ÉLECTRICITÉ ET COURANTS FAIBLES</td></tr>
+<tr class="row-section"><td colspan="6"><em>Installations électriques</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">E-501</td>
+  <td>Tableau général basse tension (TGBT)</td>
+  <td class="td-center">U</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">380.000,00</td>
+  <td class="td-num">380.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">E-502</td>
+  <td>Réseau courants forts</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">1.450.000,00</td>
+  <td class="td-num">1.450.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">E-503</td>
+  <td>Système SSI catégorie A</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">720.000,00</td>
+  <td class="td-num">720.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT E</td><td class="td-num">2.550.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT F : CVC ET ÉQUIPEMENTS SPÉCIAUX</td></tr>
+<tr class="row-section"><td colspan="6"><em>Équipements techniques</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">F-601</td>
+  <td>Climatisation VRF complète</td>
+  <td class="td-center">Fft</td>
+  <td class="td-num">1,00</td>
+  <td class="td-num">1.650.000,00</td>
+  <td class="td-num">1.650.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">F-602</td>
+  <td>Ascenseurs 8 personnes (2 cabines)</td>
+  <td class="td-center">U</td>
+  <td class="td-num">2,00</td>
+  <td class="td-num">280.000,00</td>
+  <td class="td-num">560.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT F</td><td class="td-num">2.210.000,00 DH HT</td></tr>
+<tr class="row-lot"><td colspan="6">LOT G : VRD ET AMÉNAGEMENTS EXTÉRIEURS</td></tr>
+<tr class="row-section"><td colspan="6"><em>Voirie et réseaux</em></td></tr>
+<tr>
+  <td style="white-space:nowrap">G-701</td>
+  <td>Voirie en béton bitumineux 0/10</td>
+  <td class="td-center">m²</td>
+  <td class="td-num">4.200,00</td>
+  <td class="td-num">185,00</td>
+  <td class="td-num">777.000,00</td>
+</tr>
+<tr>
+  <td style="white-space:nowrap">G-702</td>
+  <td>Réseau EU/EP enterré PVC</td>
+  <td class="td-center">ml</td>
+  <td class="td-num">680,00</td>
+  <td class="td-num">850,00</td>
+  <td class="td-num">578.000,00</td>
+</tr>
+<tr class="row-total"><td colspan="5">Total LOT G</td><td class="td-num">1.355.000,00 DH HT</td></tr>
+</tbody>
+</table>
+</section>
+<section class="page-break">
+<h1>Annexe 1 — Modèle de caution provisoire</h1>
+<div><p>Modèle de caution provisoire conforme au Référentiel Général des Achats TMSA — à compléter par la banque de l'entrepreneur.</p></div>
+</section>
+<section class="page-break">
+<h1>Annexe 2 — Liste des plans et documents du DCE</h1>
+<div><p>Plans architecturaux : A-001 à A-148<br>
+Plans béton armé : BA-001 à BA-092<br>
+Plans fluides : FL-001 à FL-045<br>
+Plans électricité : EL-001 à EL-067<br>
+Plans VRD : VRD-001 à VRD-028</p></div>
+</section>
+</body>
+</html>

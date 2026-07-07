@@ -224,7 +224,7 @@ h4 {
 }
 .prix-code { font-variant: small-caps; letter-spacing: 1pt; }
 .prix-unit { font-size: 9pt; font-style: italic; }
-.prix-desc { padding: 8pt; font-size: 10.5pt; line-height: 1.5; text-align: justify; }
+.prix-desc { padding: 8pt; font-size: 10.5pt; line-height: 1.5; text-align: justify; white-space: pre-wrap; }
 
 /* ─── Tables TMPA (BDP / ESTIM) ─────────────────────────────────── */
 .table-tmpa {
@@ -473,7 +473,12 @@ ${clauses.map((c) => this.renderClause(c)).join('\n')}
   }
 
   private renderChapter4(prices: Array<{ code: string; title: string; unit: string; description: string }>): string {
-    if (!prices.length) return '';
+    if (!prices.length) {
+      return `<section class="page-break">
+<h1>Chapitre IV — Définition des Prix</h1>
+<p class="cl-para"><em>Aucun prix défini.</em></p>
+</section>`;
+    }
     const rows = prices
       .map(
         (p) =>
