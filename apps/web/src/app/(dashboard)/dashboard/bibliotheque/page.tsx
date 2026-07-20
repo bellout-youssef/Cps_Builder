@@ -16,7 +16,7 @@ import { getProjects, type ProjectListItem } from '@/lib/api/projects';
 import { getSeries, getArticles, type SerieItem, type ArticleItem } from '@/lib/api/referential';
 import { globalSearch, type SearchHit } from '@/lib/api/search';
 import { useAuth } from '@/contexts/auth-context';
-import { WorkflowStep } from '@cps/shared';
+import { WorkflowStep, RoleName } from '@cps/shared';
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +40,7 @@ function BibliothequeContent() {
 
   const tabParam = (searchParams.get('tab') ?? 'mes-projets') as TabId;
   const viewParam = (searchParams.get('view') ?? 'liste') as ViewMode;
+  const isAdmin = (user?.roles ?? []).includes(RoleName.ADMIN);
 
   const [activeTab, setActiveTab] = useState<TabId>(tabParam);
   const [viewMode, setViewMode] = useState<ViewMode>(viewParam);
@@ -177,7 +178,7 @@ function BibliothequeContent() {
     if (projectsError)
       return <p className="py-10 text-center text-sm text-red-500">{projectsError}</p>;
     return viewMode === 'liste' ? (
-      <ProjectList projects={list} emptyMessage={empty} currentUserId={user?.sub} />
+      <ProjectList projects={list} emptyMessage={empty} currentUserId={user?.sub} isAdmin={isAdmin} />
     ) : (
       <ProjectTree projects={list} emptyMessage={empty} />
     );

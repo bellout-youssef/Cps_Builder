@@ -1,11 +1,13 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Post,
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import { WorkflowStep } from '@prisma/client';
 import { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
@@ -32,6 +34,17 @@ export class DocumentsController {
   @Post(':id/generate-preview')
   @RequirePermissions('projects:read')
   async generatePreview(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const { workflowStep } = await this.publication.checkGenerateAccess(
+      id,
+      user.organizationId!,
+      user.sub,
+      user.roles,
+    );
+    if (workflowStep === WorkflowStep.PUBLISHED) {
+      throw new ForbiddenException(
+        'Un CPS publié est immutable — téléchargez les documents publiés via le endpoint documents.',
+      );
+    }
     await this.publication.generatePreview(id, user.organizationId!);
     return { message: 'Aperçu généré avec succès' };
   }
@@ -52,6 +65,7 @@ export class DocumentsController {
     @CurrentUser() user: JwtPayload,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    await this.publication.checkGenerateAccess(id, user.organizationId!, user.sub, user.roles);
     const { fullPath, filename } = await this.publication.getDocumentPath(id, type, user.organizationId!);
     const mime = MIME[type.toLowerCase()] ?? 'application/octet-stream';
     res.set({

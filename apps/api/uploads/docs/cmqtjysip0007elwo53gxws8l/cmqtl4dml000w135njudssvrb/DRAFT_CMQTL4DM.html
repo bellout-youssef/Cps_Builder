@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS — DRAFT_CMQTL4DM</title>
+<style>
+/* ─── Base ─────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  color: #000000;
+  line-height: 1.45;
+  background: #ffffff;
+}
+
+/* ─── Print / Page ──────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 2.54cm 2.54cm 3.5cm 2.54cm; }
+  h1, h2, h3 { page-break-after: avoid; }
+  .page-break { page-break-before: always; }
+  .no-break { page-break-inside: avoid; }
+}
+
+/* ─── Headings ──────────────────────────────────────────────────── */
+h1 {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  color: #0F4761;
+  margin: 18pt 0 4pt;
+  page-break-after: avoid;
+}
+h2 {
+  font-family: 'Calibri Light', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 16pt;
+  font-weight: 700;
+  color: #4472C4;
+  font-variant: small-caps;
+  border-bottom: 1pt solid #5B9BD5;
+  margin: 14pt 0 8pt;
+  padding-bottom: 4pt;
+  page-break-after: avoid;
+}
+h3 {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #000000;
+  margin: 12pt 0 3pt;
+  page-break-after: avoid;
+}
+h4 {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 8pt 0 2pt;
+}
+
+/* ─── Cover ─────────────────────────────────────────────────────── */
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 60pt 50pt;
+  page-break-after: always;
+}
+.cover-org {
+  align-self: flex-start;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 12pt;
+  font-variant: small-caps;
+  color: #0070C0;
+  font-weight: 700;
+}
+.cover-body {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16pt;
+}
+.cover-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-variant: small-caps;
+  color: #4472C4;
+  letter-spacing: 4pt;
+  text-transform: uppercase;
+}
+.cover-title {
+  font-family: Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #0F4761;
+  line-height: 1.3;
+}
+.cover-type-badge {
+  display: inline-block;
+  background: #0070C0;
+  color: white;
+  font-size: 9pt;
+  font-variant: small-caps;
+  padding: 3pt 8pt;
+  margin: 2pt;
+  border-radius: 2pt;
+}
+.cover-meta {
+  font-size: 10pt;
+  color: #555555;
+  line-height: 1.8;
+  text-align: center;
+}
+.cover-code {
+  align-self: stretch;
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  text-align: right;
+  border-top: 1pt solid #0070C0;
+  border-bottom: 1pt solid #0070C0;
+  padding: 6pt 0;
+  letter-spacing: 1pt;
+}
+
+/* ─── TOC ───────────────────────────────────────────────────────── */
+.toc { margin: 20pt 0; }
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 5pt;
+}
+.toc-item-label {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.toc-item-label.lvl1 {
+  font-weight: 700;
+  color: #0070C0;
+  font-size: 9pt;
+}
+.toc-item-label.lvl2 {
+  font-size: 9pt;
+  margin-left: 20pt;
+}
+.toc-dots {
+  flex: 1;
+  border-bottom: 0.5pt dotted #888;
+  margin: 0 6pt;
+  min-width: 20pt;
+}
+.toc-page {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 9pt;
+  color: #0070C0;
+  white-space: nowrap;
+}
+
+/* ─── Clauses ───────────────────────────────────────────────────── */
+.clause { margin-bottom: 18pt; }
+.clause-header { display: flex; align-items: baseline; gap: 8pt; margin-bottom: 4pt; }
+.clause-number {
+  font-family: 'Calibri Light', Calibri, sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #0070C0;
+  font-variant: small-caps;
+  white-space: nowrap;
+}
+.clause-title { font-weight: 700; font-size: 11pt; }
+.clause-content { text-align: justify; line-height: 1.5; }
+.clause-modified {
+  border-left: 3pt solid #FFC000;
+  padding-left: 8pt;
+  background-color: #FFFBEE;
+}
+.clause-badge {
+  display: inline-block;
+  font-size: 8pt;
+  color: #B07000;
+  font-style: italic;
+  margin-bottom: 4pt;
+}
+.sub-clause { margin: 8pt 0 0 24pt; }
+.sub-clause-title { font-weight: 700; font-size: 10pt; margin-bottom: 2pt; }
+
+/* ─── Chapitre II Questionnaire ─────────────────────────────────── */
+.q-item { margin-bottom: 14pt; }
+.q-question { font-weight: 700; margin-bottom: 4pt; }
+.q-answer {
+  padding: 6pt 8pt;
+  border: 0.5pt solid #CCCCCC;
+  background: #F8F8F8;
+  text-align: justify;
+}
+
+/* ─── Chapitre IV Définition des prix ───────────────────────────── */
+.prix-item {
+  border: 0.5pt solid #DDDDDD;
+  margin-bottom: 12pt;
+  page-break-inside: avoid;
+}
+.prix-header {
+  background-color: #0F4761;
+  color: white;
+  font-weight: 700;
+  padding: 5pt 8pt;
+  font-size: 10pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.prix-code { font-variant: small-caps; letter-spacing: 1pt; }
+.prix-unit { font-size: 9pt; font-style: italic; }
+.prix-desc { padding: 8pt; font-size: 10.5pt; line-height: 1.5; text-align: justify; white-space: pre-wrap; }
+
+/* ─── Tables TMPA (BDP / ESTIM) ─────────────────────────────────── */
+.table-tmpa {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9pt;
+  margin-bottom: 24pt;
+}
+.table-tmpa th {
+  background-color: #0070C0;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 5pt 4pt;
+  border: 0.5pt solid #004E90;
+  text-align: center;
+  font-variant: small-caps;
+}
+.table-tmpa td {
+  border: 0.5pt solid #CCCCCC;
+  padding: 3pt 4pt;
+  vertical-align: top;
+}
+.table-tmpa .td-num {
+  text-align: right;
+  white-space: nowrap;
+}
+.table-tmpa .td-center { text-align: center; }
+.table-tmpa .row-lot td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+  font-size: 9.5pt;
+}
+.table-tmpa .row-section td {
+  background-color: #DEEAF1;
+  color: #0F4761;
+  font-weight: 700;
+  font-style: italic;
+}
+.table-tmpa .row-sub-section td {
+  background-color: #EBF3FB;
+  color: #4472C4;
+  font-weight: 700;
+}
+.table-tmpa .row-total td {
+  background-color: #4472C4;
+  color: #ffffff;
+  font-weight: 700;
+}
+.table-tmpa .row-grand-total td {
+  background-color: #0F4761;
+  color: #ffffff;
+  font-weight: 700;
+  font-variant: small-caps;
+}
+
+/* ─── RECAP (Estimation) ────────────────────────────────────────── */
+.recap-title {
+  font-family: Calibri, sans-serif;
+  font-variant: small-caps;
+  font-weight: 700;
+  color: #0F4761;
+  font-size: 12pt;
+  margin-bottom: 8pt;
+}
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="cover-org">Organisation TMPA Démo</div>
+  <div class="cover-body">
+    <div class="cover-label">Cahier des Prescriptions Spéciales</div>
+    <div class="cover-title">test</div>
+    
+    <div><span class="cover-type-badge">A</span> <span class="cover-type-badge">E</span> <span class="cover-type-badge">B</span> <span class="cover-type-badge">O</span></div>
+    <div class="cover-meta">
+      Créé par : <strong>Vérificateur CPS</strong><br>
+      Publié le : <strong>20 juillet 2026</strong>
+    </div>
+  </div>
+  <div class="cover-code">DRAFT_CMQTL4DM</div>
+</section>
+<section class="page-break">
+<h1>Sommaire</h1>
+<div class="toc"><div class="toc-item">
+    <span class="toc-item-label lvl1">Préambule</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre I — Clauses Communes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre II — Questionnaire</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre III — Clauses Techniques</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre IV — Définition des Prix</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Chapitre V — Bordereau des Prix et Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Bordereau des Prix Détail</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl2">Estimation</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div>
+<div class="toc-item">
+    <span class="toc-item-label lvl1">Annexes</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page">—</span>
+  </div></div>
+</section>
+<section class="page-break">
+<h1>Préambule</h1>
+<div><p>Le présent CPS définit les conditions dans lesquelles seront exécutés les travaux.</p></div>
+</section>
+<section class="page-break">
+<h1>Chapitre I — Clauses Communes</h1>
+
+</section>
+<section class="page-break">
+<h1>Chapitre II — Clauses Administratives et Financières Spécifiques</h1>
+<h2>Article 2.1 — OBJET DU MARCHÉ</h2>
+<p>Le présent marché a pour objet la réalisation de travaux relatifs à v</p>
+<p>à …. (lieu)……………………………</p>
+<h2>Article 2.2 — INTERVENANTS</h2>
+<p>Les intervenants du présent marchés sont :</p>
+<p>Le maitre d'ouvrage  :Tanger Med Port Authority (TMPA)</p>
+<p>Le maitre d'œuvre (Architecte, BET…):……………………………………………………</p>
+<p>Bureau de Contrôle:v</p>
+<p>Cabinet topographique ;…………………………………</p>
+<h2>Article 2.3 — CONSISTANCE DES TRAVAUX</h2>
+<p>Les travaux à exécuter au titre du présent marché consistent en ce qui suit :</p>
+<ul><li>v</li></ul>
+<h2>Article 2.4 — RÉFÉRENCE AUX TEXTES SPÉCIAUX APPLICABLES AU MARCHÉ</h2>
+<p>Le titulaire du marché est soumis aux dispositions des textes suivants :</p>
+<ul><li>v</li></ul>
+<p>Ainsi que tous les textes relatifs à la conformité légale et réglementaire ayant trait à l'aspect environnemental en vigueur à la date de la signature du contrat, demeurent applicables.</p>
+<p>L'entrepreneur devra se procurer ces documents s'il ne les possède pas et ne pourra en aucun cas exciper de l'ignorance de ceux-ci et se dérober aux obligations qui y sont contenues.</p>
+<p>En cas de contradiction entre ces textes, les prescriptions des documents les plus récents primeront.</p>
+<h2>Article 2.5 — CAUTIONNEMENT DÉFINITIF</h2>
+<p>Le montant du cautionnement définitif est fixé à (3%) du montant initial du marché éventuellement complété par les avenants intervenus.</p>
+<p>Si l'entrepreneur ne réalise pas le cautionnement définitif dans un délai de 30 jours à compter de la date de la notification de l'approbation du présent marché, il lui sera appliqué une pénalité fixée à un pour cent (1%) du montant initial du marché.</p>
+<p>Dans le cas de non-production, le montant total du cautionnement définitif, sera retenu sur les sommes dues à partir du premier décompte.</p>
+<p>Le cautionnement définitif doit être établi, selon le modèle prévu à cet effet, auprès des banques agrées par les autorités marocaines.</p>
+<p>Les conditions de restitution des garanties pécuniaires ou libération des cautions sont celles énumérée l'Article 15 du Référentiel Général des Achats -TMSA- fixant les Conditions Administratives Générales applicables aux Marches de Travaux et de Fournitures</p>
+<h2>Article 2.6 — DURÉE, DÉLAI D'EXÉCUTION OU DATE D'ACHÈVEMENT</h2>
+<p>Le délai global d'exécution est ……………………………………</p>
+<p>Le prestataire est tenu de respecter les délais partiels suivants :</p>
+<table class="table-tmpa"><thead><tr><th></th><th>Délai d'exécution</th><th>Date de commencement</th><th>Condition de réception</th></tr></thead><tbody><tr><td>Délai 1</td><td>(XXX) mois</td><td>À partir de l'OSC 1, au plus tard 60 j après signature</td><td>Achèvement sanctionné par PV de RP partielle</td></tr></tbody></table>
+<p>OSC : ordre service pour commencer des prestations</p>
+<p>Un mois calendaire est égal à 30 jours. Les délais partiels d'exécution courent à partir des dates prévues par le ou les ordres de services prescrivant le commencement de l'exécution des travaux y afférents ou, à défaut, à partir du lendemain des dates de notification desdits ordres de service.</p>
+<h2>Article 2.7 — DÉLAI DE GARANTIE</h2>
+<p>Le délai de garantie est fixé à <strong>XXXX</strong> à compter de la date de la réception provisoire ou à défaut de la date de la réception provisoire partielle.</p>
+<p>Pendant le délai de garantie, l'entrepreneur sera tenu de remettre au maître d'ouvrage les plans des ouvrages conformes à l'exécution, de procéder aux rectifications qui lui seraient demandées en cas de malfaçons ou d'insuffisances constatées et de remédier à l'ensemble des défectuosités, sans pour autant que ces travaux supplémentaires puissent donner lieu au paiement à l'exception de ceux résultant de l'usure normale, d'un abus d'usage ou de dommages causés par des tiers.</p>
+<h2>Article 2.8 — PÉNALITÉS POUR RETARD</h2>
+<p>En cas de retard dans l'exécution des prestations, il est appliqué une pénalité comme suit :</p>
+<table class="table-tmpa"><thead><tr><th>Pénalités</th><th></th></tr></thead><tbody><tr><td>Délai 1</td><td>(X/1000) du montant du marché</td></tr></tbody></table>
+<p>Ledit montant est celui du marché initial, éventuellement majoré par les montants correspondants aux travaux supplémentaires et à l'augmentation dans la masse des travaux.</p>
+<p>Ces pénalités seront appliquées de plein droit et sans mise en demeure sur toutes les sommes dues au prestataire.</p>
+<p>D'autres pénalités applicables :</p>
+<p> -…………..</p>
+<p>-…………..</p>
+<p>Les pénalités sont encourues du simple fait de la constatation du retard ou écart par le Maître d'Ouvrage qui, sans préjudice de toute autre méthode de recouvrement, déduit d'office le montant de ces pénalités de toutes les sommes dont titulaire est redevable.</p>
+<p>L'application de ces pénalités ne libère en rien le Prestataire de l'ensemble des autres obligations et responsabilités qu'il a souscrites au titre du marché.</p>
+<p>Dans le cas de résiliation suite à la défaillance de l'entrepreneur, les pénalités sont appliquées jusqu'au jour d'ultimatum indiqué dans la dernière mise en demeure notifiée au prestataire ou jusqu'au jour d'arrêt de l'exploitation de l'entreprise si la résiliation résulte d'une liquidation ou redressement judiciaire, Décès ou incapacité physique de l'entrepreneur.</p>
+<p>La résiliation, si elle est prononcée, prend effet à la date de la décision du syndic de renoncer à poursuivre l'exécution du Marché ou de l'expiration du délai de (1) mois ci-dessus. Elle n'ouvre droit, pour l'Entrepreneur, à aucune indemnité</p>
+<p>Les journées de repos hebdomadaire ainsi que les jours fériés ou chômés ne sont pas déduits pour le calcul des montants des pénalités.</p>
+<p>Lorsque le plafond des pénalités est atteint, le Maître d'ouvrage est en droit de résilier le marché sans mise en demeure préalable</p>
+<p>L'ensemble des montants des pénalités est plafonné à (<strong>10</strong>%) du montant initial du marché éventuellement complété par les montants correspondant aux travaux supplémentaires et à l'augmentation dans la masse des prestations.</p>
+<p>Si le délai global d'exécution a été respecté les pénalités par rapport aux délais partiels seront restituées.</p>
+<h2>Article 2.9 — RÉVISION DES PRIX</h2>
+<p>Les prix du marché sont fermes et non révisables.</p>
+<h2>Article 2.10 — SOUS-TRAITANCE</h2>
+<p>Conformément aux dispositions de l'Article 32 du Référentiel Général des Achats -TMSA- fixant les Conditions Administratives Générales applicables aux Marches de Travaux et de Fournitures, et si l'entrepreneur envisage de sous-traiter une partie du marché, il doit requérir l'accord préalable écrit du maître d'ouvrage dans les conditions fixées par ledit article.</p>
+<p>La sous-traitance ne peut en aucun cas dépasser (50%) du montant du marché ni porter sur le lot ou le corps d'état principal du marché.</p>
+<p>Les travaux énumérés ci-après ne peuvent faire l'objet de sous-traitance :</p>
+<p>……………………………………………………………………………………………………………………………</p>
+<p>…………………………………………………………………………………………………………………………………</p>
+<p>……………………………………………………………………………………………………………………………</p>
+<p>Le titulaire demeure personnellement responsable de toutes les obligations résultant du marché tant envers le maître d'ouvrage que vis-à-vis des ouvriers et les tiers.</p>
+<h2>Article 2.11 — APPROVISIONNEMENTS</h2>
+<p>Le présent marché ne prévoit pas d'acompte sur approvisionnements de matériaux et matières premières destinés à entrer dans la composition des travaux objet du marché.</p>
+<h2>Article 2.12 — CAS DE FORCE MAJEURE</h2>
+<p>On entend par force majeure tout acte ou événement imprévisible, irrésistible, hors du contrôle des parties et qui rend l'exécution du Marché pratiquement impossible, tel que catastrophes naturelles, incendies, explosions, guerre, mobilisation, grèves générales, tremblements de terre, mais non les événements qui rendraient seulement l'exécution d'une obligation plus difficile ou plus onéreuse pour son débiteur.</p>
+<p>En cas de survenance d'un événement de force majeure, l'entrepreneur a droit à une augmentation raisonnable des délais d'exécution.</p>
+<p>Deux cas se présentent :</p>
+<ul><li>Un ou des événements dont l'incidence contractuelle se limite à un arrêt de travail qui fera l'objet d'un ordre de service précisant la durée de prolongation.</li><li>Un événement ayant occasionné des incidences contractuelles autres que l'arrêt de travail fera l'objet d'un avenant si nécessaire.</li></ul>
+<p>Les durées d'arrêts doivent être constatées et formalisées à travers un PV par le Maitre d'Ouvrage ou son représentant. Le PV décrit l'événement ainsi que les incidences causées par l'arrêt (la durée de l'arrêt…)</p>
+<p>Aucune indemnité ne peut être accordée au titulaire pour perte totale ou partielle de son matériel, les frais d'assurance de ce matériel étant réputés compris dans les prix du marché.</p>
+<p>Les seuils des intempéries qui sont réputés constituer un événement de force majeure sont définis comme suit :</p>
+<table class="table-tmpa"><thead><tr><th>Evénement</th><th>Travaux Maritimes</th><th>Aménagement</th><th>Bâtiment</th></tr></thead><tbody><tr><td>Pluie</td><td>15 mm/Jour</td><td>5 mm/Jour</td><td>10 mm/Jour</td></tr><tr><td>Vent</td><td>Rafales dépassant 60 Km/h</td><td>Rafales dépassant 60 Km/h</td><td>Rafales dépassant 60 Km/h</td></tr><tr><td>Houle</td><td>6 m</td><td>NA</td><td>NA</td></tr><tr><td>Séisme</td><td>4 degrés sur l'échelle de Richter</td><td>4 degrés sur l'échelle de Richter</td><td>4 degrés sur l'échelle de Richter</td></tr></tbody></table>
+<p>Dans le cas d'intempéries dépassant le seuil fixé par le marché, entraînant un arrêt de travail sur les chantiers, les délais d'exécution des travaux sont prolongés. Cette prolongation est notifiée à l'Entrepreneur par un ordre de service qui en précise la durée, laquelle est égale au nombre de journées réellement constaté au cours desquelles le travail a été arrêté du fait des intempéries.</p>
+<p>En tout état de cause, l'entrepreneur qui invoque le cas de force majeure, devra aussitôt après l'apparition d'un tel cas, et dans un délai maximum de sept (7) jours, adresser au maître d'ouvrage une notification par lettre recommandée établissant les éléments constitutifs de la force majeure et ses conséquences probables sur la réalisation du marché.</p>
+<p>Dans tous les cas, le titulaire doit prendre toutes dispositions utiles pour assurer, dans les plus brefs délais, la reprise normale de l'exécution des obligations affectées par le cas de force majeure.</p>
+<p>Si, par la suite de cas de force majeure, le titulaire ne peut plus exécuter les prestations telles que prévues au marché pendant une période de (30) jours, il doit examiner dans les plus brefs délais avec le maître d'ouvrage les incidences contractuelles desdits événements sur l'exécution du marché, les délais et les obligations respectives de chacune des parties.</p>
+<p>Quand une situation de force majeure persiste pendant une période de soixante (60) jours au moins, le marché peut être résilié à l'initiative du maître d'ouvrage ou à la demande de l'entrepreneur.</p>
+<h2>Article 2.13 — CONDITIONS ET EXÉCUTION DE LA VARIANTE</h2>
+<p>Dispositions Non Applicables</p>
+<h2>Article 2.14 — RÉCEPTIONS</h2>
+<p><strong>Réception provisoires</strong></p>
+<p>Une Réception provisoire partielle sera déclarée après achèvement des prestation relatives à chaque délai.</p>
+<p><strong>Réception définitive</strong></p>
+<p>Réception définitive partielle sera déclarée après la période de garantie, relative à chaque délai partiel, à compter de sa réception provisoire partielle.</p>
+<p>Une réception provisoire globale sera déclarée en même temps que la dernière réception provisoire partielle.</p>
+<p>La réception définitive globale sera déclarée après la période de garantie relative au dernier délai partiel.</p>
+</section>
+<section class="page-break">
+<h1>Chapitre III — Clauses Techniques</h1>
+
+</section>
+<section class="page-break">
+<h1>Chapitre IV — Définition des Prix</h1>
+<p class="cl-para"><em>Aucun prix défini.</em></p>
+</section>
+<section class="page-break">
+<h1>Chapitre V — Bordereau des Prix et Estimation</h1>
+<h2>A — Bordereau des Prix Détail</h2>
+<p><em>Aucun prix défini.</em></p>
+<h2>B — Estimation</h2>
+<p><em>Aucune estimation disponible.</em></p>
+</section>
+</body>
+</html>

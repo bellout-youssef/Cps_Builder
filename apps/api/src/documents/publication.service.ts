@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { RoleName, WorkflowStep } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { DocumentType } from '@prisma/client';
 import * as fs from 'fs/promises';
@@ -34,6 +35,55 @@ export class PublicationService {
     private readonly contentBuilder: CpsContentBuilderService,
   ) {
     this.uploadsRoot = config.get<string>('UPLOADS_DIR', 'uploads');
+  }
+
+  /**
+   * Vérifie que l'utilisateur a le droit de générer/télécharger un document pour ce projet.
+   * Renvoie le workflowStep courant, ou lève 403/404.
+   *
+   * PUBLISHED         → tous les membres de l'org (documents déjà figés à la publication)
+   * CREATION / PENDING_REVIEW → créateur OU porteur actuel
+   * ADMIN_REVIEW      → créateur OU rôle ADMIN/SUPER_ADMIN
+   * Autres            → 403 systématique
+   */
+  async checkGenerateAccess(
+    projectId: string,
+    orgId: string,
+    userId: string,
+    roles: RoleName[],
+  ): Promise<{ workflowStep: WorkflowStep }> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId: orgId },
+      select: { id: true, workflowStep: true, createdById: true, currentHolderId: true },
+    });
+    if (!project) throw new NotFoundException('Projet non trouvé');
+
+    const { workflowStep, createdById, currentHolderId } = project;
+    const isAdmin = roles.includes(RoleName.ADMIN) || roles.includes(RoleName.SUPER_ADMIN);
+
+    switch (workflowStep) {
+      case WorkflowStep.PUBLISHED:
+        break; // tous les membres de l'org peuvent accéder aux documents publiés
+      case WorkflowStep.CREATION:
+      case WorkflowStep.PENDING_REVIEW:
+        if (userId !== createdById && userId !== currentHolderId) {
+          throw new ForbiddenException(
+            'Accès refusé : seuls le créateur et le porteur actuel peuvent générer un aperçu',
+          );
+        }
+        break;
+      case WorkflowStep.ADMIN_REVIEW:
+        if (userId !== createdById && !isAdmin) {
+          throw new ForbiddenException(
+            "Accès refusé : cette étape requiert d'être le créateur ou un administrateur",
+          );
+        }
+        break;
+      default:
+        throw new ForbiddenException('Génération non autorisée pour ce statut de projet');
+    }
+
+    return { workflowStep };
   }
 
   async generateAndStore(projectId: string, orgId: string): Promise<void> {
