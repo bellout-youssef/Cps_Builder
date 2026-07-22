@@ -126,7 +126,15 @@ export class PublicationService {
       this.excel.generateEstim(data),
     ]);
 
-    const pdfBuffer = await this.pdf.generate(htmlContent, project.code);
+    // PDF optionnel — activé uniquement si PDF_ENABLED=true (Chrome requis)
+    let pdfBuffer: Buffer | null = null;
+    if (process.env['PDF_ENABLED'] === 'true') {
+      try {
+        pdfBuffer = await this.pdf.generate(htmlContent, project.code);
+      } catch (err) {
+        this.logger.warn(`Génération PDF ignorée : ${(err as Error).message}`);
+      }
+    }
 
     // ── Persistance sur disque ─────────────────────────────────────
     const dir = path.join(this.uploadsRoot, 'docs', orgId, projectId);
@@ -136,7 +144,9 @@ export class PublicationService {
     const files: Array<{ type: DocumentType; filename: string; buffer: Buffer }> = [
       { type: DocumentType.HTML, filename: `${slug}.html`, buffer: Buffer.from(htmlContent) },
       { type: DocumentType.DOCX, filename: `${slug}.docx`, buffer: docxBuffer },
-      { type: DocumentType.PDF, filename: `${slug}.pdf`, buffer: pdfBuffer },
+      ...(pdfBuffer
+        ? [{ type: DocumentType.PDF, filename: `${slug}.pdf`, buffer: pdfBuffer }]
+        : []),
       { type: DocumentType.BDP_EXCEL, filename: `${slug}_BDP.xlsx`, buffer: bdpBuffer },
       { type: DocumentType.ESTIM_EXCEL, filename: `${slug}_ESTIM.xlsx`, buffer: estimBuffer },
     ];

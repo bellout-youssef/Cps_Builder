@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import puppeteer from 'puppeteer';
 
 @Injectable()
@@ -6,10 +6,17 @@ export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
 
   async generate(html: string, code: string): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+    const browser = await puppeteer
+      .launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      })
+      .catch((err: unknown) => {
+        this.logger.warn(`Chrome non disponible : ${(err as Error).message}`);
+        throw new ServiceUnavailableException(
+          'Génération PDF non disponible sur cet environnement (Chrome absent)',
+        );
+      });
 
     try {
       const page = await browser.newPage();
