@@ -418,7 +418,7 @@ function NouveauProjetInner() {
               )}
               {currentStep === 5 && (
                 <Step6Delai
-                  data={{ delai_type: q.delai_type, delai_ferme_mois: q.delai_ferme_mois, tranches: q.tranches, delais_partiels: q.delais_partiels, maintien_offre_duree: q.maintien_offre_duree }}
+                  data={{ delai_type: q.delai_type, delai_ferme_mois: q.delai_ferme_mois, maintien_offre_duree: q.maintien_offre_duree, tranches: q.tranches, delais_partiels: q.delais_partiels }}
                   onChange={(d) => setQ(d)}
                 />
               )}
