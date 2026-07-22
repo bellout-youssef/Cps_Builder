@@ -2,6 +2,7 @@
   "name": "cps-builder",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev:api": "pnpm --filter api dev",
     "dev:web": "pnpm --filter web dev",
