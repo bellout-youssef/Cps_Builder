@@ -55,6 +55,7 @@ export interface CpsQuestionnaire {
   delai_ferme_mois: string;          // when delai_type === 'ferme'
   tranches: DelaiTranche[];          // when delai_type === 'tranche'
   delais_partiels: DelaiPartiel[];   // when delai_type === 'partiel'
+  maintien_offre_duree: string;      // when delai_type === 'tranche' : durée de maintien de l'offre
 
   // Step 7 — Délai de garantie + Pénalités (pivot: penalite_autres)
   delai_garantie: string;
@@ -107,6 +108,7 @@ export const EMPTY_QUESTIONNAIRE: CpsQuestionnaire = {
   caut_prov: '',
   delai_type: '',
   delai_ferme_mois: '',
+  maintien_offre_duree: '',
   tranches: [
     {
       label: 'Tranche ferme',

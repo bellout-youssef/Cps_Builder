@@ -443,12 +443,12 @@ ${articles}
         if (b.italic) styles.push('font-style:italic');
         if (b.center) styles.push('text-align:center');
         const styleAttr = styles.length ? ` style="${styles.join(';')}"` : '';
-        const inner = b.bold ? `<strong>${this.esc(b.text)}</strong>` : this.esc(b.text);
+        const inner = b.bold ? `<strong>${this.nl2br(b.text)}</strong>` : this.nl2br(b.text);
         return `<p${styleAttr}>${inner}</p>`;
       }
       case 'para_mixed': {
         const runs = b.runs
-          .map((r) => (r.bold ? `<strong>${this.esc(r.text)}</strong>` : this.esc(r.text)))
+          .map((r) => (r.bold ? `<strong>${this.nl2br(r.text)}</strong>` : this.nl2br(r.text)))
           .join('');
         const align = b.center ? ' style="text-align:center"' : '';
         return `<p${align}>${runs}</p>`;
@@ -679,6 +679,10 @@ ${lotRows}
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  private nl2br(str: string): string {
+    return this.esc(str).replace(/\n/g, '<br>');
   }
 
   private formatNum(n: number): string {

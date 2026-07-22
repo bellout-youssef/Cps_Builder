@@ -290,20 +290,38 @@ export class DocxGeneratorService {
 
   private renderBlock(b: BlockItem): (Paragraph | Table)[] {
     switch (b.kind) {
-      case 'para':
+      case 'para': {
+        const lines = b.text.split('\n');
         return [
           new Paragraph({
             alignment: b.center ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
-            children: [new TextRun({ text: b.text, size: 22, bold: b.bold, italics: b.italic })],
+            children: lines.flatMap((line, i) =>
+              i === 0
+                ? [new TextRun({ text: line, size: 22, bold: b.bold, italics: b.italic })]
+                : [new TextRun({ break: 1, text: line, size: 22, bold: b.bold, italics: b.italic })],
+            ),
           }),
         ];
-      case 'para_mixed':
+      }
+      case 'para_mixed': {
+        const children: TextRun[] = [];
+        for (const r of b.runs) {
+          const lines = r.text.split('\n');
+          lines.forEach((line, i) => {
+            children.push(
+              i === 0
+                ? new TextRun({ text: line, size: 22, bold: r.bold, italics: r.italic })
+                : new TextRun({ break: 1, text: line, size: 22, bold: r.bold, italics: r.italic }),
+            );
+          });
+        }
         return [
           new Paragraph({
             alignment: b.center ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
-            children: b.runs.map((r) => new TextRun({ text: r.text, size: 22, bold: r.bold, italics: r.italic })),
+            children,
           }),
         ];
+      }
       case 'formula':
         return [
           new Paragraph({

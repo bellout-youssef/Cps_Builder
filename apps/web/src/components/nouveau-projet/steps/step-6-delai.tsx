@@ -7,7 +7,7 @@ import type { CpsQuestionnaire, DelaiTranche, DelaiPartiel } from '../cps-questi
 
 type DelaiFields = Pick<
   CpsQuestionnaire,
-  'delai_type' | 'delai_ferme_mois' | 'tranches' | 'delais_partiels'
+  'delai_type' | 'delai_ferme_mois' | 'tranches' | 'delais_partiels' | 'maintien_offre_duree'
 >;
 
 interface Props {
@@ -308,16 +308,34 @@ export function Step6Delai({ data, onChange }: Props) {
 
       {/* Tranches */}
       {data.delai_type === 'tranche' && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-slate-700">Tableau des tranches</p>
-          <TranchesTable
-            tranches={data.tranches}
-            onChange={(tranches) => onChange({ ...data, tranches })}
-          />
-          <p className="text-xs text-slate-400">
-            La tranche ferme ne peut pas être supprimée. Ajoutez autant de tranches optionnelles
-            que nécessaire.
-          </p>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">Tableau des tranches</p>
+            <TranchesTable
+              tranches={data.tranches}
+              onChange={(tranches) => onChange({ ...data, tranches })}
+            />
+            <p className="text-xs text-slate-400">
+              La tranche ferme ne peut pas être supprimée. Ajoutez autant de tranches optionnelles
+              que nécessaire.
+            </p>
+          </div>
+          <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Durée de maintien de l'offre — Art. 2.6
+            </label>
+            <input
+              type="text"
+              value={data.maintien_offre_duree}
+              onChange={(e) => onChange({ ...data, maintien_offre_duree: e.target.value })}
+              placeholder="Ex : 90 (quatre-vingt-dix) jours"
+              className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Durée pendant laquelle le prestataire maintient son offre si la tranche optionnelle
+              n'a pas été confirmée dans le délai prévu. Laisser vide → pointillés dans le document.
+            </p>
+          </div>
         </div>
       )}
 
