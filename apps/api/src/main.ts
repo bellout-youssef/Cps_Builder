@@ -16,24 +16,15 @@ async function bootstrap(): Promise<void> {
 
   const rawOrigin = process.env['CORS_ORIGIN'] ?? '';
   const allowedOrigins = rawOrigin
-    ? rawOrigin.split(',').map((o) => o.trim()).filter(Boolean)
-    : [];
+    ? rawOrigin.split(',').map((s) => s.trim()).filter(Boolean)
+    : ['http://localhost:3000'];
   console.log('[CORS] origin configuré =', rawOrigin || 'FALLBACK localhost');
 
   app.enableCors({
-    origin: (requestOrigin, callback) => {
-      if (!requestOrigin) {
-        // server-to-server or same-origin — allow
-        return callback(null, true);
-      }
-      const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(requestOrigin);
-      const isAllowed =
-        isLocalhost ||
-        allowedOrigins.length === 0 ||
-        allowedOrigins.includes(requestOrigin);
-      callback(isAllowed ? null : new Error(`CORS: origin not allowed — ${requestOrigin}`), isAllowed);
-    },
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Disposition', 'Content-Type'],
   });
 
