@@ -14,8 +14,25 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
+  const rawOrigin = process.env['CORS_ORIGIN'] ?? '';
+  const allowedOrigins = rawOrigin
+    ? rawOrigin.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+  console.log('[CORS] origin configuré =', rawOrigin || 'FALLBACK localhost');
+
   app.enableCors({
-    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000',
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) {
+        // server-to-server or same-origin — allow
+        return callback(null, true);
+      }
+      const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(requestOrigin);
+      const isAllowed =
+        isLocalhost ||
+        allowedOrigins.length === 0 ||
+        allowedOrigins.includes(requestOrigin);
+      callback(isAllowed ? null : new Error(`CORS: origin not allowed — ${requestOrigin}`), isAllowed);
+    },
     credentials: true,
     exposedHeaders: ['Content-Disposition', 'Content-Type'],
   });

@@ -1,0 +1,8 @@
+[33m6633ae0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: contournement bug manifest route group Next.js
+[33m8ed5f15[m trigger vercel deploy d4f7029
+[33md4f7029[m fix: ajouter maintien_offre_duree dans data ligne 421
+[33ma0a4413[m fix: passer maintien_offre_duree au composant Step6Delai
+[33mf02e1d7[m chore: ignore lint errors during Vercel build
+[33m6ca2d08[m chore: ajout packageManager pnpm pour deploiement Render
+[33mc25d66f[m chore: preparation deploiement (scripts prod, CORS, PDF optionnel)
+[33m24f2840[m fix: coefficients revision + maintien offre + retours ligne - generation CPS complete
